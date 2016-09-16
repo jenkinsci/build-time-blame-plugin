@@ -1,0 +1,26 @@
+<?jelly escape-by-default='true'?>
+<j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout"
+         xmlns:t="/lib/hudson" xmlns:f="/lib/form">
+    <table class="pane">
+        <thead>
+            <tr>
+                <th class="pane-header">Label</th>
+                <th class="pane-header">Elapsed Time (mm:ss.S)</th>
+                <th class="pane-header">Time Taken (mm:ss.S)</th>
+                <th class="pane-header">Matched Line</th>
+            </tr>
+        </thead>
+        <tbody>
+            <j:set var="lastElapsedMillis" value="0"/>
+            <j:forEach items="${it}" var="item">
+                <tr>
+                    <td class="pane">${item.label}</td>
+                    <td class="pane">${item.elapsedTime}</td>
+                    <td class="pane">${item.timeTaken}</td>
+                    <td class="pane">${item.matchedLine}</td>
+                </tr>
+                <j:set var="lastElapsedMillis" value="${timestamp.elapsedMillis}"/>
+            </j:forEach>
+        </tbody>
+    </table>
+</j:jelly>

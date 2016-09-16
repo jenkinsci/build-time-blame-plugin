@@ -1,0 +1,14 @@
+<?jelly escape-by-default='true'?>
+<j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout"
+         xmlns:t="/lib/hudson" xmlns:f="/lib/form">
+    <div class="trend-graph">
+        <h3>Build Time Trend</h3>
+        <img id="graph" src="report/graph/png" lazymap="report/graph/map" alt="[Duration graph]"/>
+    </div>
+
+    <h3>Last Successful Build Times</h3>
+    <st:include class="${it.class}" page="reportTable.jelly" it="${it.latestBuildResult}"/>
+
+    <h3>Mean Successful Build Times</h3>
+    <st:include class="${it.class}" page="reportTable.jelly" it="${it.meanBuildResult}"/>
+</j:jelly>

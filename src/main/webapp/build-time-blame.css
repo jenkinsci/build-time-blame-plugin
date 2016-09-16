@@ -1,0 +1,20 @@
+.build-time-blame table .pane, .build-time-blame table .pane-header {
+    text-align: right;
+    padding: 10px;
+}
+
+.build-time-blame table.pane {
+    width: auto;
+}
+
+.build-time-blame .setting-main {
+    width: auto;
+}
+
+.build-time-blame .trend-graph img {
+    max-width: 100%;
+}
+
+.build-time-blame .error-text {
+    color: red;
+}

@@ -1,0 +1,24 @@
+<j:jelly xmlns:j="jelly:core" xmlns:f="/lib/form">
+    <f:form action="reprocessBlameReport" method="post" name="reprocessBlameReport">
+        <f:entry>
+            <f:repeatable name="relevantSteps" var="relevantStep" items="${it}" noAddButton="true" minimum="1">
+                <table>
+                    <f:entry title="Regex Search Key" field="key">
+                        <f:textbox value="${relevantStep.pattern}"/>
+                    </f:entry>
+                    <f:entry title="Label" field="label">
+                        <f:textbox value="${relevantStep.label}"/>
+                    </f:entry>
+                    <f:entry title="Only Use First Match" field="onlyFirstMatch">
+                        <f:checkbox checked="${relevantStep.onlyFirstMatch}"/>
+                    </f:entry>
+                    <f:entry>
+                        <input type="button" value="${%Delete}" class="repeatable-delete show-if-not-only"/>
+                        <input type="button" value="${%Add Pattern...}" class="repeatable-add show-if-last"/>
+                    </f:entry>
+                </table>
+            </f:repeatable>
+            <f:submit value="Reprocess Report"/>
+        </f:entry>
+    </f:form>
+</j:jelly>

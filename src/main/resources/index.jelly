@@ -1,0 +1,12 @@
+<?jelly escape-by-default='true'?>
+<j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout"
+         xmlns:t="/lib/hudson" xmlns:f="/lib/form">
+    <!--
+      This view is used to render the installed plugins page.
+    -->
+    <div>
+        A Jenkins plugin for analyzing the historical console output of a Job with the goal of determining which steps
+        are
+        taking the most time.
+    </div>
+</j:jelly>

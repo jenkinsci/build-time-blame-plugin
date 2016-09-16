@@ -1,0 +1,8 @@
+<!--
+  Config page. derived class specific entries should go to configure-entries.jsp
+-->
+<?jelly escape-by-default='true'?>
+<j:jelly xmlns:j="jelly:core" xmlns:l="/lib/layout">
+    <l:task icon="images/24x24/${action.getIconFileName()}" href="${h.getActionUrl(it.url,action)}"
+            title="${action.getDisplayName()}" permission="${app.READ}"/>
+</j:jelly>
