@@ -10,6 +10,7 @@ import net.sf.json.util.PropertyFilter
 import org.jenkins.ci.plugins.buildtimeblame.analysis.ConsoleLogMatch
 
 import static net.sf.json.JSONArray.fromObject
+import static org.jenkins.ci.plugins.buildtimeblame.io.BlameFilePaths.getReportFile
 
 class ReportIO {
     Run build

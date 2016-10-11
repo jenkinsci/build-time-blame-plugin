@@ -134,12 +134,13 @@ class BlameReportTest extends Specification {
     def 'should set graph timestamp (this is ugly to avoid including Joda Time or mocking currentTimeMillis())'() {
         given:
         def pauseTime = 15
+        def extraPause = 5
         long beforeAll = System.currentTimeMillis()
-        sleep(pauseTime)
+        sleep(pauseTime + extraPause)
         Graph graph1 = new BlameReport([]).getGraph()
-        sleep(pauseTime)
+        sleep(pauseTime + extraPause)
         Graph graph2 = new BlameReport([]).getGraph()
-        sleep(pauseTime)
+        sleep(pauseTime + extraPause)
         long afterAll = System.currentTimeMillis()
 
         when:
