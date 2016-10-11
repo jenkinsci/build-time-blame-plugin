@@ -4,9 +4,9 @@
     <modelVersion>4.0.0</modelVersion>
 
     <scm>
-        <connection>scm:git:https://github.com/JDContributions/build-time-blame-plugin.git</connection>
-        <developerConnection>scm:git:https://github.com/JDContributions/build-time-blame-plugin.git</developerConnection>
-        <url>scm:git:https://github.com/JDContributions/build-time-blame-plugin.git</url>
+        <connection>scm:git:https://github.com/jenkinsci/build-time-blame-plugin.git</connection>
+        <developerConnection>scm:git:https://github.com/jenkinsci/build-time-blame-plugin.git</developerConnection>
+        <url>scm:git:https://github.com/jenkinsci/build-time-blame-plugin.git</url>
         <tag>HEAD</tag>
     </scm>
 
@@ -31,7 +31,7 @@
         A Jenkins plugin for analyzing the historical console output of a Job
         with the goal of determining which steps are taking the most time.
     </description>
-    <url>https://github.com/JDContributions/build-time-blame-plugin</url>
+    <url>https://wiki.jenkins-ci.org/display/JENKINS/Build+Time+Blame+Plugin</url>
 
     <repositories>
         <repository>
