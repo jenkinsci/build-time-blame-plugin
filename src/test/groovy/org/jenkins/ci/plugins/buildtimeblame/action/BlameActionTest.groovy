@@ -260,21 +260,39 @@ class BlameActionTest extends Specification {
         blameAction.missingTimestampsDescription == ''
     }
 
+    def 'should not have missing timestamp description if failed builds since the first successful build'() {
+        given:
+        def blameAction = new BlameAction(Mock(AbstractProject))
+        blameAction._report = new BlameReport([new BuildResult(build: Mock(Run) { _ * it.getNumber() >> 60 })])
+        blameAction.buildsWithoutTimestamps = [
+                Mock(Run) { _ * it.getNumber() >> 58 },
+                Mock(Run) { _ * it.getNumber() >> 59 },
+                Mock(Run) { _ * it.getNumber() >> 57 },
+        ]
+
+        expect:
+        blameAction.missingTimestampsDescription == ''
+    }
+
     def 'should have correct missing timestamp description if some builds match'() {
         given:
         def blameAction = new BlameAction(Mock(AbstractProject))
+        blameAction._report = new BlameReport([new BuildResult(build: Mock(Run) { _ * it.getNumber() >> 60 })])
         def firstBuildNumber = 105
         def secondBuildNumber = 99
-        def thirdBuildNumber = 55
+        def thirdBuildNumber = 61
+        def expectedBuildNumbers = "$thirdBuildNumber, $secondBuildNumber, $firstBuildNumber"
 
         blameAction.buildsWithoutTimestamps = [
+                Mock(Run) { _ * it.getNumber() >> 59 },
                 Mock(Run) { _ * it.getNumber() >> firstBuildNumber },
                 Mock(Run) { _ * it.getNumber() >> secondBuildNumber },
+                Mock(Run) { _ * it.getNumber() >> 35 },
                 Mock(Run) { _ * it.getNumber() >> thirdBuildNumber },
         ]
 
         expect:
-        blameAction.missingTimestampsDescription == 'Error finding timestamps for builds: 55, 99, 105'
+        blameAction.missingTimestampsDescription == "Error finding timestamps for builds: $expectedBuildNumbers"
     }
 
     private Run getRunWith(Result result, boolean isBuilding = false) {

@@ -2,18 +2,18 @@
 
 package org.jenkins.ci.plugins.buildtimeblame.action
 
-import org.jenkins.ci.plugins.buildtimeblame.analysis.BlameReport
-import org.jenkins.ci.plugins.buildtimeblame.analysis.LogParser
-import org.jenkins.ci.plugins.buildtimeblame.analysis.RelevantStep
-import org.jenkins.ci.plugins.buildtimeblame.io.ConfigIO
-import org.jenkins.ci.plugins.buildtimeblame.io.ReportIO
 import groovy.transform.ToString
 import hudson.model.AbstractProject
 import hudson.model.Action
 import hudson.model.Result
 import hudson.model.Run
 import net.sf.json.JSONObject
+import org.jenkins.ci.plugins.buildtimeblame.analysis.BlameReport
 import org.jenkins.ci.plugins.buildtimeblame.analysis.BuildResult
+import org.jenkins.ci.plugins.buildtimeblame.analysis.LogParser
+import org.jenkins.ci.plugins.buildtimeblame.analysis.RelevantStep
+import org.jenkins.ci.plugins.buildtimeblame.io.ConfigIO
+import org.jenkins.ci.plugins.buildtimeblame.io.ReportIO
 import org.kohsuke.stapler.StaplerRequest
 import org.kohsuke.stapler.StaplerResponse
 
@@ -57,8 +57,12 @@ class BlameAction implements Action {
             return ''
         }
 
-        def orderedBuildNumbers = buildsWithoutTimestamps.collect({ it.getNumber() }).sort()
-        return "Error finding timestamps for builds: ${orderedBuildNumbers.join(', ')}"
+        List<Integer> buildNumbers = getFailedBuildNumbers()
+        if (buildNumbers.isEmpty()) {
+            return ''
+        }
+
+        return "Error finding timestamps for builds: ${buildNumbers.sort().join(', ')}"
     }
 
     BlameReport getReport() {
@@ -73,6 +77,13 @@ class BlameAction implements Action {
         updateRelevantSteps(request.getSubmittedForm())
         clearReports()
         redirectToParentURI(request, response)
+    }
+
+    private List<Integer> getFailedBuildNumbers() {
+        def firstSuccessful = report.buildResults.collect({ it.build.getNumber() }).min()
+        return buildsWithoutTimestamps
+                .collect({ it.getNumber() })
+                .findAll({ it > firstSuccessful })
     }
 
     private void clearReports() {
