@@ -1,20 +1,16 @@
 //  Copyright (c) 2016 Deere & Company
 package org.jenkins.ci.plugins.buildtimeblame.action
 
-import org.jenkins.ci.plugins.buildtimeblame.analysis.LogParser
-import org.jenkins.ci.plugins.buildtimeblame.analysis.BlameReport
-import org.jenkins.ci.plugins.buildtimeblame.analysis.BuildResult
-import org.jenkins.ci.plugins.buildtimeblame.analysis.ConsoleLogMatch
-import org.jenkins.ci.plugins.buildtimeblame.analysis.RelevantStep
-import org.jenkins.ci.plugins.buildtimeblame.io.ConfigIO
-import org.jenkins.ci.plugins.buildtimeblame.io.ReportIO
-import org.jenkins.ci.plugins.buildtimeblame.io.StaplerUtils
 import groovy.transform.ToString
 import hudson.model.AbstractProject
 import hudson.model.Action
 import hudson.model.Result
 import hudson.model.Run
 import hudson.util.RunList
+import org.jenkins.ci.plugins.buildtimeblame.analysis.*
+import org.jenkins.ci.plugins.buildtimeblame.io.ConfigIO
+import org.jenkins.ci.plugins.buildtimeblame.io.ReportIO
+import org.jenkins.ci.plugins.buildtimeblame.io.StaplerUtils
 import org.kohsuke.stapler.StaplerRequest
 import org.kohsuke.stapler.StaplerResponse
 import spock.lang.Specification
@@ -77,10 +73,13 @@ class BlameActionTest extends Specification {
 
     def 'should parse log for each build'() {
         given:
+        def lastBuildNumber = 37
         def logParser = GroovyMock(LogParser, global: true)
         def project = Mock(AbstractProject)
         def build1 = getRunWith(Result.SUCCESS)
+        _ * build1.number >> lastBuildNumber
         def build2 = getRunWith(Result.SUCCESS)
+        _ * build1.number >> 36
         def build1Results = new BuildResult(consoleLogMatches: [new ConsoleLogMatch(label: 'one')])
         def build2Results = new BuildResult(consoleLogMatches: [new ConsoleLogMatch(label: 'two')])
         def blameAction = new BlameAction(project)
@@ -95,6 +94,7 @@ class BlameActionTest extends Specification {
         1 * logParser.getBuildResult(build2) >> build2Results
         report == new BlameReport([build1Results, build2Results])
         blameAction.buildsWithoutTimestamps == []
+        blameAction.lastProcessedBuild == lastBuildNumber
     }
 
     def 'should only include successful or unstable builds'() {
@@ -139,10 +139,13 @@ class BlameActionTest extends Specification {
 
     def 'should handle missing timestamps'() {
         given:
+        def lastBuildNumber = 6
         def logParser = GroovyMock(LogParser, global: true)
         def project = Mock(AbstractProject)
         Run build1 = getRunWith(Result.SUCCESS)
+        _ * build1.number >> 5
         Run build2 = getRunWith(Result.SUCCESS)
+        _ * build2.number >> lastBuildNumber
         def build1Results = new BuildResult(consoleLogMatches: [new ConsoleLogMatch(label: 'one')])
         def blameAction = new BlameAction(project)
 
@@ -156,6 +159,7 @@ class BlameActionTest extends Specification {
         1 * logParser.getBuildResult(build2) >> { throw new LogParser.TimestampMissingException() }
         report == new BlameReport([build1Results])
         blameAction.buildsWithoutTimestamps == [build2]
+        blameAction.lastProcessedBuild == lastBuildNumber
     }
 
     def 'should override equal appropriately'() {
@@ -235,8 +239,10 @@ class BlameActionTest extends Specification {
         def blameAction = new BlameAction(project)
         def expected = new BlameReport([])
         def runWithoutTimestamps = Mock(Run)
+        def lastBuildNumber = 3
         blameAction._report = expected
         blameAction.buildsWithoutTimestamps = [runWithoutTimestamps]
+        blameAction.lastProcessedBuild = lastBuildNumber
 
         when:
         def report = blameAction.getReport()
@@ -244,7 +250,36 @@ class BlameActionTest extends Specification {
         then:
         report == expected
         blameAction.buildsWithoutTimestamps == [runWithoutTimestamps]
+        1 * project.getNearestBuild(3) >> null
         0 * _
+    }
+
+    def 'should recalculate build results if new builds have been run'() {
+        given:
+        def project = Mock(AbstractProject)
+        def blameAction = new BlameAction(project)
+        def expected = new BlameReport([])
+        def runWithoutTimestamps = Mock(Run)
+        def lastBuildNumber = 15
+        blameAction._report = expected
+        blameAction.buildsWithoutTimestamps = [runWithoutTimestamps]
+        blameAction.lastProcessedBuild = lastBuildNumber
+        def logParser = GroovyMock(LogParser, global: true)
+        def build1 = getRunWith(Result.SUCCESS)
+        def build2 = getRunWith(Result.SUCCESS)
+        def build1Results = new BuildResult(consoleLogMatches: [new ConsoleLogMatch(label: 'one')])
+        def build2Results = new BuildResult(consoleLogMatches: [new ConsoleLogMatch(label: 'two')])
+
+        when:
+        def report = blameAction.getReport()
+
+        then:
+        1 * project.getBuilds() >> RunList.fromRuns([build1, build2])
+        1 * project.getNearestBuild(lastBuildNumber) >> Mock(hudson.model.AbstractBuild)
+        1 * new LogParser(blameAction.relevantSteps) >> logParser
+        1 * logParser.getBuildResult(build1) >> build1Results
+        1 * logParser.getBuildResult(build2) >> build2Results
+        report == new BlameReport([build1Results, build2Results])
     }
 
     def 'should include helpful annotation'() {
