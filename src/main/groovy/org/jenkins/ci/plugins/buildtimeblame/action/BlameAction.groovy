@@ -2,18 +2,18 @@
 
 package org.jenkins.ci.plugins.buildtimeblame.action
 
-import org.jenkins.ci.plugins.buildtimeblame.analysis.BlameReport
-import org.jenkins.ci.plugins.buildtimeblame.analysis.LogParser
-import org.jenkins.ci.plugins.buildtimeblame.analysis.RelevantStep
-import org.jenkins.ci.plugins.buildtimeblame.io.ConfigIO
-import org.jenkins.ci.plugins.buildtimeblame.io.ReportIO
 import groovy.transform.ToString
 import hudson.model.AbstractProject
 import hudson.model.Action
 import hudson.model.Result
 import hudson.model.Run
 import net.sf.json.JSONObject
+import org.jenkins.ci.plugins.buildtimeblame.analysis.BlameReport
 import org.jenkins.ci.plugins.buildtimeblame.analysis.BuildResult
+import org.jenkins.ci.plugins.buildtimeblame.analysis.LogParser
+import org.jenkins.ci.plugins.buildtimeblame.analysis.RelevantStep
+import org.jenkins.ci.plugins.buildtimeblame.io.ConfigIO
+import org.jenkins.ci.plugins.buildtimeblame.io.ReportIO
 import org.kohsuke.stapler.StaplerRequest
 import org.kohsuke.stapler.StaplerResponse
 
@@ -31,6 +31,7 @@ class BlameAction implements Action {
     List<Run> buildsWithoutTimestamps = []
     List<RelevantStep> relevantSteps
     private BlameReport _report
+    private int lastProcessedBuild
 
     BlameAction(AbstractProject project) {
         this.project = project
@@ -62,11 +63,16 @@ class BlameAction implements Action {
     }
 
     BlameReport getReport() {
-        if (_report == null) {
+        if (_report == null || hasNewBuilds()) {
+            buildsWithoutTimestamps = []
             _report = new BlameReport(getBuildResults(new LogParser(this.relevantSteps)))
         }
 
         return _report
+    }
+
+    private boolean hasNewBuilds() {
+        project.getNearestBuild(lastProcessedBuild) != null
     }
 
     public doReprocessBlameReport(StaplerRequest request, StaplerResponse response) {
@@ -96,6 +102,8 @@ class BlameAction implements Action {
             } catch (LogParser.TimestampMissingException ignored) {
                 buildsWithoutTimestamps.add(run)
                 return null
+            } finally {
+                lastProcessedBuild = Math.max(lastProcessedBuild, run.getNumber())
             }
         }.findAll {
             it != null
