@@ -58,8 +58,12 @@ class BlameAction implements Action {
             return ''
         }
 
-        def orderedBuildNumbers = buildsWithoutTimestamps.collect({ it.getNumber() }).sort()
-        return "Error finding timestamps for builds: ${orderedBuildNumbers.join(', ')}"
+        List<Integer> buildNumbers = getFailedBuildNumbers()
+        if (buildNumbers.isEmpty()) {
+            return ''
+        }
+
+        return "Error finding timestamps for builds: ${buildNumbers.sort().join(', ')}"
     }
 
     BlameReport getReport() {
@@ -79,6 +83,13 @@ class BlameAction implements Action {
         updateRelevantSteps(request.getSubmittedForm())
         clearReports()
         redirectToParentURI(request, response)
+    }
+
+    private List<Integer> getFailedBuildNumbers() {
+        def firstSuccessful = report.buildResults.collect({ it.build.getNumber() }).min()
+        return buildsWithoutTimestamps
+                .collect({ it.getNumber() })
+                .findAll({ it > firstSuccessful })
     }
 
     private void clearReports() {
