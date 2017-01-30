@@ -2,11 +2,11 @@
 package org.jenkins.ci.plugins.buildtimeblame.analysis
 
 import com.google.common.base.Optional
-import org.jenkins.ci.plugins.buildtimeblame.io.CustomFileReader
-import org.jenkins.ci.plugins.buildtimeblame.io.ReportIO
 import hudson.model.Run
 import hudson.plugins.timestamper.Timestamp
 import hudson.plugins.timestamper.io.TimestampsReader
+import org.jenkins.ci.plugins.buildtimeblame.io.CustomFileReader
+import org.jenkins.ci.plugins.buildtimeblame.io.ReportIO
 import spock.lang.Specification
 
 class LogParserTest extends Specification {
@@ -115,20 +115,59 @@ class LogParserTest extends Specification {
         ]
     }
 
-    def 'should throw error for missing timestamp'() {
+    def 'should throw error for enough missing timestamps'() {
         given:
         TimestampsReader timestampReader = GroovyMock(TimestampsReader, global: true)
         def build = Mock(Run)
         def timestamp1 = new Timestamp(100, 0)
-        setupMockLog(build, 'line1', 'line2', 'line3')
+        setupMockLog(build, 'line1', 'line2', 'line3', 'line4')
+        def logParser = new LogParser([new RelevantStep(~/line4/, '', false)])
+        logParser.maximumMissingTimestamps = 2
 
         when:
-        new LogParser([]).getBuildResult(build)
+        logParser.getBuildResult(build)
 
         then:
         _ * new TimestampsReader(build) >> timestampReader
-        2 * timestampReader.read() >>> [Optional.of(timestamp1), Optional.absent()]
+        4 * timestampReader.read() >>> [Optional.of(timestamp1), Optional.absent(), Optional.absent(), Optional.absent()]
         thrown(LogParser.TimestampMissingException)
+    }
+
+    def 'should ignore missing timestamps if no match is found after them'() {
+        given:
+        TimestampsReader timestampReader = GroovyMock(TimestampsReader, global: true)
+        def build = Mock(Run)
+        def timestamp1 = new Timestamp(100, 0)
+        setupMockLog(build, 'line1', 'line2', 'line3', 'line4')
+        def logParser = new LogParser([])
+        logParser.maximumMissingTimestamps = 0
+
+        when:
+        logParser.getBuildResult(build)
+
+        then:
+        _ * new TimestampsReader(build) >> timestampReader
+        4 * timestampReader.read() >>> [Optional.of(timestamp1), Optional.absent(), Optional.absent(), Optional.absent()]
+        noExceptionThrown()
+    }
+
+    def 'should ignore the configured number of missing timestamps'() {
+        given:
+        TimestampsReader timestampReader = GroovyMock(TimestampsReader, global: true)
+        def build = Mock(Run)
+        def timestamp1 = new Timestamp(100, 0)
+        setupMockLog(build, 'line1', 'line2', 'line3', 'line4')
+        def logParser = new LogParser([new RelevantStep(~/line4/, '', false)])
+        logParser.maximumMissingTimestamps = 3
+
+        when:
+        def result = logParser.getBuildResult(build)
+
+        then:
+        _ * new TimestampsReader(build) >> timestampReader
+        4 * timestampReader.read() >>> [Optional.of(timestamp1), Optional.absent(), Optional.absent(), Optional.absent()]
+        result.consoleLogMatches.size() == 1
+        noExceptionThrown()
     }
 
     def 'should return existing results'() {
@@ -145,6 +184,14 @@ class LogParserTest extends Specification {
         0 * _
         results.consoleLogMatches == expected
         results.build == build
+    }
+
+    def 'should have expected default number of missing timestamps'() {
+        given:
+        def logParser = new LogParser([])
+
+        expect:
+        logParser.maximumMissingTimestamps == 1
     }
 
     private void setupMockLog(Run build, String... lines) {
