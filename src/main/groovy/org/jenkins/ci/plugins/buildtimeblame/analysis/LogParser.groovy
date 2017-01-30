@@ -3,6 +3,7 @@ package org.jenkins.ci.plugins.buildtimeblame.analysis
 
 import com.google.common.base.Optional
 import hudson.model.Run
+import hudson.plugins.timestamper.Timestamp
 import hudson.plugins.timestamper.io.TimestampsReader
 import org.jenkins.ci.plugins.buildtimeblame.io.ReportIO
 
@@ -10,6 +11,7 @@ import static org.jenkins.ci.plugins.buildtimeblame.io.CustomFileReader.eachLine
 
 class LogParser {
     List<RelevantStep> relevantSteps = []
+    int maximumMissingTimestamps = 1
 
     LogParser(List<RelevantStep> relevantSteps) {
         this.relevantSteps = relevantSteps.collect()
@@ -27,32 +29,50 @@ class LogParser {
 
     private List<ConsoleLogMatch> computeRelevantLogLines(Run run) {
         def result = []
-        def timestampsReader = new TimestampsReader(run)
         def previousElapsedTime = 0
+        def addSingleMatchIfFound = { String label, String line, Timestamp timestamp ->
+            result.add(new ConsoleLogMatch(
+                    label: label,
+                    matchedLine: line,
+                    timestamp: timestamp,
+                    previousElapsedTime: previousElapsedTime,
+            ))
+            previousElapsedTime = timestamp.elapsedMillis
+        }
+
+        processMatches(run, addSingleMatchIfFound)
+        ReportIO.getInstance(run).write(result)
+        return result
+    }
+
+    private void processMatches(Run run, Closure onMatch) {
+        def numberOfMissingTimestamps = 0
+        Timestamp previousTimestamp
+
+        def timestampsReader = new TimestampsReader(run)
 
         eachLineOnlyLF(run.getLogInputStream()) { String line ->
             def nextTimestamp = timestampsReader.read()
+            def step = getMatchingRegex(line)
 
             if (nextTimestamp.isPresent()) {
-                def step = getMatchingRegex(line)
-
-                if (step.isPresent()) {
-                    def timestamp = nextTimestamp.get()
-
-                    result.add(new ConsoleLogMatch(
-                            label: step.get().label,
-                            matchedLine: line,
-                            timestamp: timestamp,
-                            previousElapsedTime: previousElapsedTime,
-                    ))
-                    previousElapsedTime = timestamp.elapsedMillis
-                }
+                previousTimestamp = nextTimestamp.get()
             } else {
-                throw new TimestampMissingException()
+                numberOfMissingTimestamps++
+            }
+
+            if (step.isPresent()) {
+                if (nextTimestamp.isPresent()) {
+                    def timestamp = nextTimestamp.get()
+                    onMatch(step.get().label, line, timestamp)
+                    previousTimestamp = nextTimestamp.get()
+                } else if (numberOfMissingTimestamps <= maximumMissingTimestamps) {
+                    onMatch(step.get().label, line, previousTimestamp)
+                } else {
+                    throw new TimestampMissingException()
+                }
             }
         }
-        ReportIO.getInstance(run).write(result)
-        return result
     }
 
     Optional<RelevantStep> getMatchingRegex(String value) {
