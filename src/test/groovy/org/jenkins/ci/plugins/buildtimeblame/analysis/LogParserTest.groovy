@@ -45,6 +45,30 @@ class LogParserTest extends Specification {
         buildResult.consoleLogMatches == expected
     }
 
+    def 'should keep single match steps from one build to the next'() {
+        given:
+        TimestampsReader timestampReader = GroovyMock(TimestampsReader, global: true)
+        def build1 = Mock(Run)
+        setupMockLog(build1, 'theFirstLine', 'theSecondLine', 'theThirdLine')
+        def build2 = Mock(Run)
+        setupMockLog(build2, 'theFirstLine', 'theSecondLine', 'theThirdLine')
+        def timestamps = getRandomTimestamps(3)
+        def logParser = new LogParser([
+                new RelevantStep(~/.*First.*/, 'Part One', true),
+                new RelevantStep(~/.*Third.*/, 'Part Two', true),
+        ])
+
+        when:
+        logParser.getBuildResult(build1)
+        BuildResult buildResult = logParser.getBuildResult(build2)
+
+        then:
+        _ * new TimestampsReader(build2) >> timestampReader
+        _ * timestampReader.read() >>> timestamps.collect { Optional.of(it) }
+        buildResult.build == build2
+        buildResult.consoleLogMatches.size() == 2
+    }
+
     def 'should include the label if it is found multiple times'() {
         given:
         TimestampsReader timestampReader = GroovyMock(TimestampsReader, global: true)
