@@ -12,9 +12,13 @@
     <parent>
         <groupId>org.jenkins-ci.plugins</groupId>
         <artifactId>plugin</artifactId>
-        <version>1.580.1</version>
-        <relativePath />
+        <version>2.11</version>
     </parent>
+
+    <properties>
+        <jenkins.version>1.580.1</jenkins.version>
+    </properties>
+
     <artifactId>build-time-blame</artifactId>
     <version>1.1.2-SNAPSHOT</version>
     <packaging>hpi</packaging>
@@ -120,6 +124,13 @@
                         <phase>none</phase>
                     </execution>
                 </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>findbugs-maven-plugin</artifactId>
+                <configuration>
+                    <excludeFilterFile>findbugs-exclude.xml</excludeFilterFile>
+                </configuration>
             </plugin>
             <plugin>
                 <groupId>org.codehaus.gmavenplus</groupId>
