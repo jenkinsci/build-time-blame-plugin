@@ -50,10 +50,11 @@ class LogParser {
         Timestamp previousTimestamp
 
         def timestampsReader = new TimestampsReader(run)
+        def steps = relevantSteps.collect()
 
         eachLineOnlyLF(run.getLogInputStream()) { String line ->
             def nextTimestamp = timestampsReader.read()
-            def step = getMatchingRegex(line)
+            def step = getMatchingRegex(line, steps)
 
             if (nextTimestamp.isPresent()) {
                 previousTimestamp = nextTimestamp.get()
@@ -75,11 +76,11 @@ class LogParser {
         }
     }
 
-    Optional<RelevantStep> getMatchingRegex(String value) {
-        for (RelevantStep step : relevantSteps) {
+    static Optional<RelevantStep> getMatchingRegex(String value, List<RelevantStep> steps) {
+        for (RelevantStep step : steps) {
             if (step.pattern.matcher(value).matches()) {
                 if (step.onlyFirstMatch) {
-                    relevantSteps.remove(step)
+                    steps.remove(step)
                 }
                 return Optional.of(step)
             }
