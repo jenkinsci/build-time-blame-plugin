@@ -157,6 +157,22 @@ class LogParserTest extends Specification {
         thrown(LogParser.TimestampMissingException)
     }
 
+    def 'should throw error if there are no timestamps'() {
+        given:
+        TimestampsReader timestampReader = GroovyMock(TimestampsReader, global: true)
+        def build = Mock(Run)
+        setupMockLog(build, 'line1', 'line2', 'line3', 'line4')
+        def logParser = new LogParser([new RelevantStep(~/line1/, '', false)])
+
+        when:
+        logParser.getBuildResult(build)
+
+        then:
+        _ * new TimestampsReader(build) >> timestampReader
+        1 * timestampReader.read() >> Optional.absent()
+        thrown(LogParser.TimestampMissingException)
+    }
+
     def 'should ignore missing timestamps if no match is found after them'() {
         given:
         TimestampsReader timestampReader = GroovyMock(TimestampsReader, global: true)
@@ -210,7 +226,7 @@ class LogParserTest extends Specification {
         results.build == build
     }
 
-    def 'should have expected default number of missing timestamps'() {
+    def 'should have expected default number of ignored missing timestamps'() {
         given:
         def logParser = new LogParser([])
 

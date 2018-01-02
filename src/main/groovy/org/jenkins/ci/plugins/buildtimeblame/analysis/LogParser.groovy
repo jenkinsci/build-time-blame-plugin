@@ -2,6 +2,7 @@
 package org.jenkins.ci.plugins.buildtimeblame.analysis
 
 import com.google.common.base.Optional
+import com.thoughtworks.xstream.mapper.Mapper.Null
 import hudson.model.Run
 import hudson.plugins.timestamper.Timestamp
 import hudson.plugins.timestamper.io.TimestampsReader
@@ -47,7 +48,7 @@ class LogParser {
 
     private void processMatches(Run run, Closure onMatch) {
         def numberOfMissingTimestamps = 0
-        Timestamp previousTimestamp
+        Timestamp mostRecentTimestamp
 
         def timestampsReader = new TimestampsReader(run)
         def steps = relevantSteps.collect()
@@ -57,7 +58,7 @@ class LogParser {
             def step = getMatchingRegex(line, steps)
 
             if (nextTimestamp.isPresent()) {
-                previousTimestamp = nextTimestamp.get()
+                mostRecentTimestamp = nextTimestamp.get()
             } else {
                 numberOfMissingTimestamps++
             }
@@ -66,9 +67,9 @@ class LogParser {
                 if (nextTimestamp.isPresent()) {
                     def timestamp = nextTimestamp.get()
                     onMatch(step.get().label, line, timestamp)
-                    previousTimestamp = nextTimestamp.get()
-                } else if (numberOfMissingTimestamps <= maximumMissingTimestamps) {
-                    onMatch(step.get().label, line, previousTimestamp)
+                    mostRecentTimestamp = nextTimestamp.get()
+                } else if (mostRecentTimestamp && numberOfMissingTimestamps <= maximumMissingTimestamps) {
+                    onMatch(step.get().label, line, mostRecentTimestamp)
                 } else {
                     throw new TimestampMissingException()
                 }
