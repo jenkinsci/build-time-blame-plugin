@@ -156,7 +156,7 @@ class BlameActionTest extends Specification {
         1 * project.getBuilds() >> RunList.fromRuns([build1, build2])
         1 * new LogParser(blameAction.relevantSteps) >> logParser
         1 * logParser.getBuildResult(build1) >> build1Results
-        1 * logParser.getBuildResult(build2) >> { throw new LogParser.TimestampMissingException() }
+        1 * logParser.getBuildResult(build2) >> { throw new RuntimeException() }
         report == new BlameReport([build1Results])
         blameAction.buildsWithoutTimestamps == [build2]
         blameAction.lastProcessedBuild == lastBuildNumber

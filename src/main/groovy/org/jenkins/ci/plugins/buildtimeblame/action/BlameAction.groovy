@@ -110,7 +110,7 @@ class BlameAction implements Action {
         }.collect { Run run ->
             try {
                 return logParser.getBuildResult(run)
-            } catch (LogParser.TimestampMissingException ignored) {
+            } catch (RuntimeException ignored) {
                 buildsWithoutTimestamps.add(run)
                 return null
             } finally {
