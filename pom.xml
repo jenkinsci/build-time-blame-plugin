@@ -6,7 +6,7 @@
         <connection>scm:git:git@github.com:jenkinsci/build-time-blame-plugin.git</connection>
         <developerConnection>scm:git:git@github.com:jenkinsci/build-time-blame-plugin.git</developerConnection>
         <url>scm:git:git@github.com:jenkinsci/build-time-blame-plugin.git</url>
-        <tag>HEAD</tag>
+        <tag>v1.1.1</tag>
     </scm>
 
     <parent>
@@ -20,7 +20,7 @@
     </properties>
 
     <artifactId>build-time-blame</artifactId>
-    <version>1.1.2-SNAPSHOT</version>
+    <version>1.1.1</version>
     <packaging>hpi</packaging>
     <licenses>
         <license>
