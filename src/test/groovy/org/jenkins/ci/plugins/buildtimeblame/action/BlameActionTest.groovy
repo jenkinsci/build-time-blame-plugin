@@ -2,8 +2,8 @@
 package org.jenkins.ci.plugins.buildtimeblame.action
 
 import groovy.transform.ToString
-import hudson.model.AbstractProject
 import hudson.model.Action
+import hudson.model.Job
 import hudson.model.Result
 import hudson.model.Run
 import hudson.util.RunList
@@ -38,27 +38,27 @@ class BlameActionTest extends Specification {
         blameAction.getUrlName() == 'buildTimeBlameReport'
     }
 
-    def 'should store project'() {
+    def 'should store job'() {
         given:
-        AbstractProject project = Mock(AbstractProject)
+        Job job = Mock(Job)
 
         when:
-        def blameAction = new BlameAction(project)
+        def blameAction = new BlameAction(job)
 
         then:
-        blameAction.project == project
+        blameAction.job == job
     }
 
     def 'should read configuration from file'() {
         given:
-        def project = Mock(AbstractProject)
+        def job = Mock(Job)
         def expected = [new RelevantStep((~'.*anything.*'), 'label', true)]
 
         when:
-        def blameAction = new BlameAction(project)
+        def blameAction = new BlameAction(job)
 
         then:
-        1 * new ConfigIO(project) >> mockConfigIO
+        1 * new ConfigIO(job) >> mockConfigIO
         1 * mockConfigIO.readOrDefault(BlameAction.DEFAULT_PATTERNS) >> expected
         blameAction.relevantSteps == expected
     }
@@ -75,20 +75,20 @@ class BlameActionTest extends Specification {
         given:
         def lastBuildNumber = 37
         def logParser = GroovyMock(LogParser, global: true)
-        def project = Mock(AbstractProject)
+        def job = Mock(Job)
         def build1 = getRunWith(Result.SUCCESS)
         _ * build1.number >> lastBuildNumber
         def build2 = getRunWith(Result.SUCCESS)
         _ * build1.number >> 36
         def build1Results = new BuildResult(consoleLogMatches: [new ConsoleLogMatch(label: 'one')])
         def build2Results = new BuildResult(consoleLogMatches: [new ConsoleLogMatch(label: 'two')])
-        def blameAction = new BlameAction(project)
+        def blameAction = new BlameAction(job)
 
         when:
         def report = blameAction.getReport()
 
         then:
-        1 * project.getBuilds() >> RunList.fromRuns([build1, build2])
+        1 * job.getBuilds() >> RunList.fromRuns([build1, build2])
         1 * new LogParser(blameAction.relevantSteps) >> logParser
         1 * logParser.getBuildResult(build1) >> build1Results
         1 * logParser.getBuildResult(build2) >> build2Results
@@ -100,19 +100,19 @@ class BlameActionTest extends Specification {
     def 'should only include successful or unstable builds'() {
         given:
         def logParser = GroovyMock(LogParser, global: true)
-        def project = Mock(AbstractProject)
+        def job = Mock(Job)
         def successful = getRunWith(Result.SUCCESS)
         def unstable = getRunWith(Result.UNSTABLE)
         def failed = getRunWith(Result.FAILURE)
         def aborted = getRunWith(Result.ABORTED)
         def notBuilt = getRunWith(Result.NOT_BUILT)
-        def blameAction = new BlameAction(project)
+        def blameAction = new BlameAction(job)
 
         when:
         blameAction.getReport()
 
         then:
-        1 * project.getBuilds() >> RunList.fromRuns([successful, unstable, failed, aborted, notBuilt])
+        1 * job.getBuilds() >> RunList.fromRuns([successful, unstable, failed, aborted, notBuilt])
         1 * new LogParser(blameAction.relevantSteps) >> logParser
         1 * logParser.getBuildResult(successful) >> []
         1 * logParser.getBuildResult(unstable) >> []
@@ -122,16 +122,16 @@ class BlameActionTest extends Specification {
     def 'should only include non-running builds'() {
         given:
         def logParser = GroovyMock(LogParser, global: true)
-        def project = Mock(AbstractProject)
+        def job = Mock(Job)
         def running = getRunWith(Result.SUCCESS, true)
         def notRunning = getRunWith(Result.UNSTABLE)
-        def blameAction = new BlameAction(project)
+        def blameAction = new BlameAction(job)
 
         when:
         blameAction.getReport()
 
         then:
-        1 * project.getBuilds() >> RunList.fromRuns([running, notRunning])
+        1 * job.getBuilds() >> RunList.fromRuns([running, notRunning])
         1 * new LogParser(blameAction.relevantSteps) >> logParser
         1 * logParser.getBuildResult(notRunning) >> []
         0 * logParser.getBuildResult(_ as Run)
@@ -141,19 +141,19 @@ class BlameActionTest extends Specification {
         given:
         def lastBuildNumber = 6
         def logParser = GroovyMock(LogParser, global: true)
-        def project = Mock(AbstractProject)
+        def job = Mock(Job)
         Run build1 = getRunWith(Result.SUCCESS)
         _ * build1.number >> 5
         Run build2 = getRunWith(Result.SUCCESS)
         _ * build2.number >> lastBuildNumber
         def build1Results = new BuildResult(consoleLogMatches: [new ConsoleLogMatch(label: 'one')])
-        def blameAction = new BlameAction(project)
+        def blameAction = new BlameAction(job)
 
         when:
         def report = blameAction.getReport()
 
         then:
-        1 * project.getBuilds() >> RunList.fromRuns([build1, build2])
+        1 * job.getBuilds() >> RunList.fromRuns([build1, build2])
         1 * new LogParser(blameAction.relevantSteps) >> logParser
         1 * logParser.getBuildResult(build1) >> build1Results
         1 * logParser.getBuildResult(build2) >> { throw new RuntimeException() }
@@ -164,19 +164,19 @@ class BlameActionTest extends Specification {
 
     def 'should override equal appropriately'() {
         given:
-        def project = Mock(AbstractProject)
+        def job = Mock(Job)
 
         expect:
-        new BlameAction(project) == new BlameAction(project)
-        new BlameAction(project) != new BlameAction(Mock(AbstractProject))
-        new BlameAction(project).each { it.relevantSteps = [] } != new BlameAction(project)
+        new BlameAction(job) == new BlameAction(job)
+        new BlameAction(job) != new BlameAction(Mock(Job))
+        new BlameAction(job).each { it.relevantSteps = [] } != new BlameAction(job)
     }
 
     def 'should update configuration'() {
         given:
-        def project = Mock(AbstractProject)
+        def job = Mock(Job)
         def response = Mock(StaplerResponse)
-        def blameAction = new BlameAction(project)
+        def blameAction = new BlameAction(job)
         def originalObject = fromObject([key: 'value'])
         def expectedRelevantSteps = [new RelevantStep(~/.*|.*/, 'anything happened', false)]
         def submittedSteps = [fromObject([key: 'value'])]
@@ -187,7 +187,7 @@ class BlameActionTest extends Specification {
 
         then:
         1 * StaplerUtils.getAsList(originalObject, 'relevantSteps') >> submittedSteps
-        1 * new ConfigIO(project) >> mockConfigIO
+        1 * new ConfigIO(job) >> mockConfigIO
         1 * mockConfigIO.readValue(submittedSteps) >> expectedRelevantSteps
         1 * mockConfigIO.write(expectedRelevantSteps)
         blameAction.relevantSteps == expectedRelevantSteps
@@ -197,7 +197,7 @@ class BlameActionTest extends Specification {
         given:
         def response = Mock(StaplerResponse)
         def request = Mock(StaplerRequest)
-        def blameAction = new BlameAction(Mock(AbstractProject))
+        def blameAction = new BlameAction(Mock(Job))
 
         when:
         blameAction.doReprocessBlameReport(request, response)
@@ -212,13 +212,13 @@ class BlameActionTest extends Specification {
         def firstRun = getRunWith(Result.FAILURE)
         def secondRun = getRunWith(Result.SUCCESS)
 
-        def project = Mock(AbstractProject) { AbstractProject project ->
-            project.getBuilds() >> RunList.fromRuns([firstRun, secondRun])
+        def job = Mock(Job) { Job job ->
+            job.getBuilds() >> RunList.fromRuns([firstRun, secondRun])
         }
 
         def response = Mock(StaplerResponse)
         def request = Mock(StaplerRequest)
-        def blameAction = new BlameAction(project)
+        def blameAction = new BlameAction(job)
         blameAction._report = new BlameReport(null)
         blameAction.buildsWithoutTimestamps = [Mock(Run)]
 
@@ -235,8 +235,8 @@ class BlameActionTest extends Specification {
 
     def 'should not recalculate build results if report exists'() {
         given:
-        def project = Mock(AbstractProject)
-        def blameAction = new BlameAction(project)
+        def job = Mock(Job)
+        def blameAction = new BlameAction(job)
         def expected = new BlameReport([])
         def runWithoutTimestamps = Mock(Run)
         def lastBuildNumber = 3
@@ -250,14 +250,14 @@ class BlameActionTest extends Specification {
         then:
         report == expected
         blameAction.buildsWithoutTimestamps == [runWithoutTimestamps]
-        1 * project.getNearestBuild(3) >> null
+        1 * job.getNearestBuild(3) >> null
         0 * _
     }
 
     def 'should recalculate build results if new builds have been run'() {
         given:
-        def project = Mock(AbstractProject)
-        def blameAction = new BlameAction(project)
+        def job = Mock(Job)
+        def blameAction = new BlameAction(job)
         def expected = new BlameReport([])
         def runWithoutTimestamps = Mock(Run)
         def lastBuildNumber = 15
@@ -274,8 +274,8 @@ class BlameActionTest extends Specification {
         def report = blameAction.getReport()
 
         then:
-        1 * project.getBuilds() >> RunList.fromRuns([build1, build2])
-        1 * project.getNearestBuild(lastBuildNumber) >> Mock(hudson.model.AbstractBuild)
+        1 * job.getBuilds() >> RunList.fromRuns([build1, build2])
+        1 * job.getNearestBuild(lastBuildNumber) >> Mock(hudson.model.AbstractBuild)
         1 * new LogParser(blameAction.relevantSteps) >> logParser
         1 * logParser.getBuildResult(build1) >> build1Results
         1 * logParser.getBuildResult(build2) >> build2Results
@@ -289,7 +289,7 @@ class BlameActionTest extends Specification {
 
     def 'should not have missing timestamp description if no builds'() {
         given:
-        def blameAction = new BlameAction(Mock(AbstractProject))
+        def blameAction = new BlameAction(Mock(Job))
 
         expect:
         blameAction.missingTimestampsDescription == ''
@@ -297,7 +297,7 @@ class BlameActionTest extends Specification {
 
     def 'should not have missing timestamp description if failed builds since the first successful build'() {
         given:
-        def blameAction = new BlameAction(Mock(AbstractProject))
+        def blameAction = new BlameAction(Mock(Job))
         blameAction._report = new BlameReport([new BuildResult(build: Mock(Run) { _ * it.getNumber() >> 60 })])
         blameAction.buildsWithoutTimestamps = [
                 Mock(Run) { _ * it.getNumber() >> 58 },
@@ -311,7 +311,7 @@ class BlameActionTest extends Specification {
 
     def 'should have correct missing timestamp description if some builds match'() {
         given:
-        def blameAction = new BlameAction(Mock(AbstractProject))
+        def blameAction = new BlameAction(Mock(Job))
         blameAction._report = new BlameReport([new BuildResult(build: Mock(Run) { _ * it.getNumber() >> 60 })])
         def firstBuildNumber = 105
         def secondBuildNumber = 99

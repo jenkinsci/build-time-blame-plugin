@@ -4,8 +4,8 @@ package org.jenkins.ci.plugins.buildtimeblame.action
 
 import groovy.transform.EqualsAndHashCode
 import groovy.transform.ToString
-import hudson.model.AbstractProject
 import hudson.model.Action
+import hudson.model.Job
 import hudson.model.Result
 import hudson.model.Run
 import net.sf.json.JSONObject
@@ -29,15 +29,15 @@ class BlameAction implements Action {
             new RelevantStep(~/^Finished: (SUCCESS|UNSTABLE|FAILURE|NOT_BUILT|ABORTED)$.*/, 'Finished', true),
     ]
 
-    AbstractProject project
+    Job job
     List<Run> buildsWithoutTimestamps = []
     List<RelevantStep> relevantSteps
     private BlameReport _report
     private int lastProcessedBuild
 
-    BlameAction(AbstractProject project) {
-        this.project = project
-        this.relevantSteps = new ConfigIO(project).readOrDefault(DEFAULT_PATTERNS)
+    BlameAction(Job job) {
+        this.job = job
+        this.relevantSteps = new ConfigIO(job).readOrDefault(DEFAULT_PATTERNS)
     }
 
     @Override
@@ -78,7 +78,7 @@ class BlameAction implements Action {
     }
 
     private boolean hasNewBuilds() {
-        project.getNearestBuild(lastProcessedBuild) != null
+        job.getNearestBuild(lastProcessedBuild) != null
     }
 
     public doReprocessBlameReport(StaplerRequest request, StaplerResponse response) {
@@ -95,19 +95,19 @@ class BlameAction implements Action {
     }
 
     private void clearReports() {
-        project.getBuilds().each { Run build -> new ReportIO(build).clear() }
+        job.getBuilds().each { Run build -> new ReportIO(build).clear() }
         _report = null
         buildsWithoutTimestamps = []
     }
 
     private void updateRelevantSteps(JSONObject jsonObject) {
-        def configIO = new ConfigIO(project)
+        def configIO = new ConfigIO(job)
         relevantSteps = configIO.readValue(getAsList(jsonObject, 'relevantSteps'))
         configIO.write(relevantSteps)
     }
 
     private List<BuildResult> getBuildResults(LogParser logParser) {
-        project.getBuilds().findAll { Run run ->
+        job.getBuilds().findAll { Run run ->
             return !run.isBuilding() && run.result.isBetterOrEqualTo(Result.UNSTABLE)
         }.collect { Run run ->
             try {
