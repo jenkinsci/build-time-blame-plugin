@@ -2,7 +2,6 @@
 package org.jenkins.ci.plugins.buildtimeblame.analysis
 
 import com.google.common.base.Optional
-import com.thoughtworks.xstream.mapper.Mapper.Null
 import hudson.model.Run
 import hudson.plugins.timestamper.Timestamp
 import hudson.plugins.timestamper.io.TimestampsReader
@@ -52,28 +51,33 @@ class LogParser {
 
         def timestampsReader = new TimestampsReader(run)
         def steps = relevantSteps.collect()
+        def inputStream = run.getLogInputStream()
 
-        eachLineOnlyLF(run.getLogInputStream()) { String line ->
-            def nextTimestamp = timestampsReader.read()
-            def step = getMatchingRegex(line, steps)
+        try {
+            eachLineOnlyLF(inputStream).forEach { String line ->
+                def nextTimestamp = timestampsReader.read()
+                def step = getMatchingRegex(line, steps)
 
-            if (nextTimestamp.isPresent()) {
-                mostRecentTimestamp = nextTimestamp.get()
-            } else {
-                numberOfMissingTimestamps++
-            }
-
-            if (step.isPresent()) {
                 if (nextTimestamp.isPresent()) {
-                    def timestamp = nextTimestamp.get()
-                    onMatch(step.get().label, line, timestamp)
                     mostRecentTimestamp = nextTimestamp.get()
-                } else if (mostRecentTimestamp && numberOfMissingTimestamps <= maximumMissingTimestamps) {
-                    onMatch(step.get().label, line, mostRecentTimestamp)
                 } else {
-                    throw new TimestampMissingException()
+                    numberOfMissingTimestamps++
+                }
+
+                if (step.isPresent()) {
+                    if (nextTimestamp.isPresent()) {
+                        def timestamp = nextTimestamp.get()
+                        onMatch(step.get().label, line, timestamp)
+                        mostRecentTimestamp = nextTimestamp.get()
+                    } else if (mostRecentTimestamp && numberOfMissingTimestamps <= maximumMissingTimestamps) {
+                        onMatch(step.get().label, line, mostRecentTimestamp)
+                    } else {
+                        throw new TimestampMissingException()
+                    }
                 }
             }
+        } finally {
+            inputStream.close()
         }
     }
 

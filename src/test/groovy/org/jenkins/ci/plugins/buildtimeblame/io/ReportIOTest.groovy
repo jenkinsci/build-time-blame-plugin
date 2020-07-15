@@ -30,7 +30,7 @@ class ReportIOTest extends Specification {
         new ReportIO(build).write(report)
 
         then:
-        getTestFile().text == '[{"label":"Finished","matchedLine":"Did it","previousElapsedTime":50,"timestamp":{"elapsedMillis":1,"millisSinceEpoch":2}}]'
+        getTestFile().text == '[{"label":"Finished","matchedLine":"Did it","previousElapsedTime":50,"timestamp":{"elapsedMillis":1,"elapsedMillisKnown":true,"millisSinceEpoch":2}}]'
     }
 
     def 'should load list from file'() {

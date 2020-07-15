@@ -9,6 +9,8 @@ import org.jenkins.ci.plugins.buildtimeblame.io.CustomFileReader
 import org.jenkins.ci.plugins.buildtimeblame.io.ReportIO
 import spock.lang.Specification
 
+import java.util.stream.Stream
+
 class LogParserTest extends Specification {
     ReportIO reportIO
 
@@ -237,11 +239,8 @@ class LogParserTest extends Specification {
     private void setupMockLog(Run build, String... lines) {
         def mockLog = Mock(InputStream)
         _ * build.getLogInputStream() >> mockLog
-        _ * CustomFileReader.eachLineOnlyLF(mockLog, { Closure action ->
-            for (String line : lines) {
-                action(line)
-            }
-        })
+        _ * CustomFileReader.eachLineOnlyLF(mockLog) >> Stream.of(lines)
+        1 * mockLog.close()
     }
 
     private static List<Timestamp> getRandomTimestamps(int number) {

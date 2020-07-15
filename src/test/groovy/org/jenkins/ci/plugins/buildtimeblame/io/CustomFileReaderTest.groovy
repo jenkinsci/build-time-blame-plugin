@@ -3,6 +3,8 @@ package org.jenkins.ci.plugins.buildtimeblame.io
 
 import spock.lang.Specification
 
+import java.util.stream.Collectors
+
 import static CustomFileReader.eachLineOnlyLF
 
 class CustomFileReaderTest extends Specification {
@@ -15,7 +17,6 @@ class CustomFileReaderTest extends Specification {
 
     def 'should call closure for each line separated by LF'() {
         given:
-        def mockClosure = Mock(Closure)
         def line1 = 'The first line\rcontains a carriage return'
         def line2 = 'The second line does not.'
         def line3 = 'What if the third line, \r does too?'
@@ -23,52 +24,10 @@ class CustomFileReaderTest extends Specification {
         inputStream = getTestFile().newInputStream()
 
         when:
-        eachLineOnlyLF(inputStream, mockClosure)
+        def result = eachLineOnlyLF(inputStream)
 
         then:
-        1 * mockClosure.call(line1)
-        1 * mockClosure.call(line2)
-        1 * mockClosure.call(line3)
-        0 * mockClosure.call(_)
-    }
-
-    def 'should close the input stream'() {
-        given:
-        def mockClosure = Mock(Closure)
-        getTestFile().write("sometext")
-        inputStream = getTestFile().newInputStream()
-
-        when:
-        eachLineOnlyLF(inputStream, mockClosure)
-        inputStream.getText()
-
-        then:
-        def exception = thrown(IOException)
-        exception.message == 'Stream closed'
-    }
-
-    def 'should close the input stream even if there is a failure'() {
-        given:
-        def failureMessage = "Couldn't process item"
-        def mockClosure = {
-            throw new RuntimeException(failureMessage)
-        }
-        getTestFile().write("sometext")
-        inputStream = getTestFile().newInputStream()
-
-        when:
-        eachLineOnlyLF(inputStream, mockClosure)
-
-        then:
-        def exception = thrown(RuntimeException)
-        exception.message == failureMessage
-
-        when:
-        inputStream.getText()
-
-        then:
-        def ioException = thrown(IOException)
-        ioException.message == 'Stream closed'
+        result.collect(Collectors.toList()) == [line1, line2, line3]
     }
 
     private static File getTestFile() {
