@@ -3,7 +3,7 @@ A Jenkins plugin for analyzing the historical console output of a Job with the g
 
 
 ## Requirements:
- + Jenkins Version >= `1.580.1`
+ + Jenkins Version >= `2.164.1`
  + [Timestamper Plugin](https://wiki.jenkins-ci.org/display/JENKINS/Timestamper)
 
 ## What it does:
