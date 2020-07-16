@@ -2,6 +2,7 @@
 
 package org.jenkins.ci.plugins.buildtimeblame.action
 
+import groovy.transform.EqualsAndHashCode
 import groovy.transform.ToString
 import hudson.model.AbstractProject
 import hudson.model.Action
@@ -21,6 +22,7 @@ import static org.jenkins.ci.plugins.buildtimeblame.io.StaplerUtils.getAsList
 import static org.jenkins.ci.plugins.buildtimeblame.io.StaplerUtils.redirectToParentURI
 
 @ToString(includeNames = true)
+@EqualsAndHashCode
 class BlameAction implements Action {
     static final List<RelevantStep> DEFAULT_PATTERNS = [
             new RelevantStep(~/.*Started by.*/, 'Job Started on Executor', true),
@@ -119,24 +121,5 @@ class BlameAction implements Action {
         }.findAll {
             it != null
         }
-    }
-
-    boolean equals(o) {
-        if (this.is(o)) return true
-        if (getClass() != o.class) return false
-
-        BlameAction that = (BlameAction) o
-
-        if (project != that.project) return false
-        if (relevantSteps.toString() != that.relevantSteps.toString()) return false
-
-        return true
-    }
-
-    int hashCode() {
-        int result
-        result = project.hashCode()
-        result = 31 * result + relevantSteps.hashCode()
-        return result
     }
 }
