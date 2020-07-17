@@ -14,13 +14,13 @@ import org.jenkins.ci.plugins.buildtimeblame.analysis.BuildResult
 import org.jenkins.ci.plugins.buildtimeblame.analysis.LogParser
 import org.jenkins.ci.plugins.buildtimeblame.analysis.RelevantStep
 import org.jenkins.ci.plugins.buildtimeblame.io.ConfigIO
+import org.jenkins.ci.plugins.buildtimeblame.io.ReportConfiguration
 import org.jenkins.ci.plugins.buildtimeblame.io.ReportIO
 import org.kohsuke.stapler.StaplerRequest
 import org.kohsuke.stapler.StaplerResponse
 
 import java.util.stream.Collectors
 
-import static org.jenkins.ci.plugins.buildtimeblame.io.StaplerUtils.getAsList
 import static org.jenkins.ci.plugins.buildtimeblame.io.StaplerUtils.redirectToParentURI
 
 @ToString(includeNames = true)
@@ -33,13 +33,13 @@ class BlameAction implements Action {
 
     Job job
     List<Run> buildsWithoutTimestamps = []
-    List<RelevantStep> relevantSteps
+    ReportConfiguration config
     private BlameReport _report
     private int lastProcessedBuild
 
     BlameAction(Job job) {
         this.job = job
-        this.relevantSteps = new ConfigIO(job).readOrDefault(DEFAULT_PATTERNS)
+        this.config = new ConfigIO(job).readOrDefault(DEFAULT_PATTERNS)
     }
 
     @Override
@@ -73,7 +73,7 @@ class BlameAction implements Action {
     BlameReport getReport() {
         if (_report == null || hasNewBuilds()) {
             buildsWithoutTimestamps = []
-            _report = new BlameReport(getBuildResults(new LogParser(this.relevantSteps)))
+            _report = new BlameReport(getBuildResults(new LogParser(this.config.relevantSteps)))
         }
 
         return _report
@@ -84,7 +84,7 @@ class BlameAction implements Action {
     }
 
     public doReprocessBlameReport(StaplerRequest request, StaplerResponse response) {
-        updateRelevantSteps(request.getSubmittedForm())
+        updateConfiguration(request.getSubmittedForm())
         clearReports()
         redirectToParentURI(request, response)
     }
@@ -103,10 +103,10 @@ class BlameAction implements Action {
         buildsWithoutTimestamps = []
     }
 
-    private void updateRelevantSteps(JSONObject jsonObject) {
+    private void updateConfiguration(JSONObject jsonObject) {
         def configIO = new ConfigIO(job)
-        relevantSteps = configIO.readValue(getAsList(jsonObject, 'relevantSteps'))
-        configIO.write(relevantSteps)
+        config = configIO.parse(jsonObject.toString())
+        configIO.write(config)
     }
 
     private List<BuildResult> getBuildResults(LogParser logParser) {
@@ -114,6 +114,7 @@ class BlameAction implements Action {
                 .filter({ Run run ->
                     return !run.isBuilding() && run.result.isBetterOrEqualTo(Result.UNSTABLE)
                 })
+                .limit(config.maxBuilds != null && config.maxBuilds > 0 ? config.maxBuilds : Integer.MAX_VALUE)
                 .map({ Run run ->
                     try {
                         return logParser.getBuildResult(run)

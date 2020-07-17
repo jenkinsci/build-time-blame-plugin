@@ -12,7 +12,7 @@
                 </j:if>
 
                 <h1>Report Configuration</h1>
-                <st:include class="${it.class}" it="${it.relevantSteps}" page="edit.jelly"/>
+                <st:include class="${it.class}" it="${it.config}" page="edit.jelly"/>
             </div>
         </l:main-panel>
     </l:layout>

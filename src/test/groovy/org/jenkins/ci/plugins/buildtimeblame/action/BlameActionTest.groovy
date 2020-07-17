@@ -9,6 +9,7 @@ import hudson.model.Run
 import hudson.util.RunList
 import org.jenkins.ci.plugins.buildtimeblame.analysis.*
 import org.jenkins.ci.plugins.buildtimeblame.io.ConfigIO
+import org.jenkins.ci.plugins.buildtimeblame.io.ReportConfiguration
 import org.jenkins.ci.plugins.buildtimeblame.io.ReportIO
 import org.jenkins.ci.plugins.buildtimeblame.io.StaplerUtils
 import org.kohsuke.stapler.StaplerRequest
@@ -25,7 +26,7 @@ class BlameActionTest extends Specification {
         mockConfigIO = GroovyMock(ConfigIO, global: true)
         //noinspection GroovyAssignabilityCheck
         _ * new ConfigIO(_) >> mockConfigIO
-        _ * mockConfigIO.readOrDefault(_ as List<RelevantStep>) >> [new RelevantStep(~'.*', 'label', true)]
+        _ * mockConfigIO.readOrDefault(_ as List<RelevantStep>) >> new ReportConfiguration(relevantSteps: [new RelevantStep(~'.*', 'label', true)])
     }
 
     def 'should implement basic Action methods'() {
@@ -52,7 +53,7 @@ class BlameActionTest extends Specification {
     def 'should read configuration from file'() {
         given:
         def job = Mock(Job)
-        def expected = [new RelevantStep((~'.*anything.*'), 'label', true)]
+        def expected = new ReportConfiguration(relevantSteps: [new RelevantStep((~'.*anything.*'), 'label', true)])
 
         when:
         def blameAction = new BlameAction(job)
@@ -60,7 +61,7 @@ class BlameActionTest extends Specification {
         then:
         1 * new ConfigIO(job) >> mockConfigIO
         1 * mockConfigIO.readOrDefault(BlameAction.DEFAULT_PATTERNS) >> expected
-        blameAction.relevantSteps == expected
+        blameAction.config == expected
     }
 
     def 'should have correct default patterns'() {
@@ -89,10 +90,64 @@ class BlameActionTest extends Specification {
 
         then:
         1 * job.getBuilds() >> RunList.fromRuns([build1, build2])
-        1 * new LogParser(blameAction.relevantSteps) >> logParser
+        1 * new LogParser(blameAction.config.relevantSteps) >> logParser
         1 * logParser.getBuildResult(build1) >> build1Results
         1 * logParser.getBuildResult(build2) >> build2Results
         report == new BlameReport([build1Results, build2Results])
+        blameAction.buildsWithoutTimestamps == []
+        blameAction.lastProcessedBuild == lastBuildNumber
+    }
+
+
+    def 'should not skip builds if maxBuilds is 0'() {
+        given:
+        def lastBuildNumber = 37
+        def logParser = GroovyMock(LogParser, global: true)
+        def job = Mock(Job)
+        def build1 = getRunWith(Result.SUCCESS)
+        _ * build1.number >> lastBuildNumber
+        def build2 = getRunWith(Result.SUCCESS)
+        _ * build1.number >> 36
+        def build1Results = new BuildResult(consoleLogMatches: [new ConsoleLogMatch(label: 'one')])
+        def build2Results = new BuildResult(consoleLogMatches: [new ConsoleLogMatch(label: 'two')])
+        def blameAction = new BlameAction(job)
+        blameAction.config.maxBuilds = 0
+
+        when:
+        def report = blameAction.getReport()
+
+        then:
+        1 * job.getBuilds() >> RunList.fromRuns([build1, build2])
+        1 * new LogParser(blameAction.config.relevantSteps) >> logParser
+        1 * logParser.getBuildResult(build1) >> build1Results
+        1 * logParser.getBuildResult(build2) >> build2Results
+        report == new BlameReport([build1Results, build2Results])
+        blameAction.buildsWithoutTimestamps == []
+        blameAction.lastProcessedBuild == lastBuildNumber
+    }
+
+    def 'should skip logs after the max builds'() {
+        given:
+        def lastBuildNumber = 37
+        def logParser = GroovyMock(LogParser, global: true)
+        def job = Mock(Job)
+        def build1 = getRunWith(Result.SUCCESS)
+        _ * build1.number >> lastBuildNumber
+        def build2 = getRunWith(Result.SUCCESS)
+        _ * build1.number >> 36
+        def build1Results = new BuildResult(consoleLogMatches: [new ConsoleLogMatch(label: 'one')])
+        def blameAction = new BlameAction(job)
+        blameAction.config.maxBuilds = 1
+
+        when:
+        def report = blameAction.getReport()
+
+        then:
+        1 * job.getBuilds() >> RunList.fromRuns([build1, build2])
+        1 * new LogParser(blameAction.config.relevantSteps) >> logParser
+        1 * logParser.getBuildResult(build1) >> build1Results
+        0 * logParser.getBuildResult(_)
+        report == new BlameReport([build1Results])
         blameAction.buildsWithoutTimestamps == []
         blameAction.lastProcessedBuild == lastBuildNumber
     }
@@ -113,7 +168,7 @@ class BlameActionTest extends Specification {
 
         then:
         1 * job.getBuilds() >> RunList.fromRuns([successful, unstable, failed, aborted, notBuilt])
-        1 * new LogParser(blameAction.relevantSteps) >> logParser
+        1 * new LogParser(blameAction.config.relevantSteps) >> logParser
         1 * logParser.getBuildResult(successful) >> []
         1 * logParser.getBuildResult(unstable) >> []
         0 * logParser.getBuildResult(_ as Run)
@@ -132,7 +187,7 @@ class BlameActionTest extends Specification {
 
         then:
         1 * job.getBuilds() >> RunList.fromRuns([running, notRunning])
-        1 * new LogParser(blameAction.relevantSteps) >> logParser
+        1 * new LogParser(blameAction.config.relevantSteps) >> logParser
         1 * logParser.getBuildResult(notRunning) >> []
         0 * logParser.getBuildResult(_ as Run)
     }
@@ -154,7 +209,7 @@ class BlameActionTest extends Specification {
 
         then:
         1 * job.getBuilds() >> RunList.fromRuns([build1, build2])
-        1 * new LogParser(blameAction.relevantSteps) >> logParser
+        1 * new LogParser(blameAction.config.relevantSteps) >> logParser
         1 * logParser.getBuildResult(build1) >> build1Results
         1 * logParser.getBuildResult(build2) >> { throw new RuntimeException() }
         report == new BlameReport([build1Results])
@@ -169,7 +224,6 @@ class BlameActionTest extends Specification {
         expect:
         new BlameAction(job) == new BlameAction(job)
         new BlameAction(job) != new BlameAction(Mock(Job))
-        new BlameAction(job).each { it.relevantSteps = [] } != new BlameAction(job)
     }
 
     def 'should update configuration'() {
@@ -177,20 +231,18 @@ class BlameActionTest extends Specification {
         def job = Mock(Job)
         def response = Mock(StaplerResponse)
         def blameAction = new BlameAction(job)
-        def originalObject = fromObject([key: 'value'])
-        def expectedRelevantSteps = [new RelevantStep(~/.*|.*/, 'anything happened', false)]
-        def submittedSteps = [fromObject([key: 'value'])]
-        def request = Mock(StaplerRequest) { _ * it.getSubmittedForm() >> originalObject }
+        def expectedConfig = new ReportConfiguration(maxBuilds: 99191, relevantSteps: [new RelevantStep(~/.*|.*/, 'anything happened', false)])
+        def submittedConfig = fromObject(expectedConfig)
+        def request = Mock(StaplerRequest) { _ * it.getSubmittedForm() >> submittedConfig }
 
         when:
         blameAction.doReprocessBlameReport(request, response)
 
         then:
-        1 * StaplerUtils.getAsList(originalObject, 'relevantSteps') >> submittedSteps
         1 * new ConfigIO(job) >> mockConfigIO
-        1 * mockConfigIO.readValue(submittedSteps) >> expectedRelevantSteps
-        1 * mockConfigIO.write(expectedRelevantSteps)
-        blameAction.relevantSteps == expectedRelevantSteps
+        1 * mockConfigIO.parse(submittedConfig.toString()) >> expectedConfig
+        1 * mockConfigIO.write(expectedConfig)
+        blameAction.config == expectedConfig
     }
 
     def 'should redirect to parent when updating configuration'() {
@@ -276,7 +328,7 @@ class BlameActionTest extends Specification {
         then:
         1 * job.getBuilds() >> RunList.fromRuns([build1, build2])
         1 * job.getNearestBuild(lastBuildNumber) >> Mock(hudson.model.AbstractBuild)
-        1 * new LogParser(blameAction.relevantSteps) >> logParser
+        1 * new LogParser(blameAction.config.relevantSteps) >> logParser
         1 * logParser.getBuildResult(build1) >> build1Results
         1 * logParser.getBuildResult(build2) >> build2Results
         report == new BlameReport([build1Results, build2Results])

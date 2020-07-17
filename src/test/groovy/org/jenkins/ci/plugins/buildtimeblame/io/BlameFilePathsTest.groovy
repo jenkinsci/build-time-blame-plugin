@@ -18,6 +18,20 @@ class BlameFilePathsTest extends Specification {
         File file = BlameFilePaths.getConfigFile(job)
 
         then:
+        file.path == new File(rootDir, 'build-time-blame-config.json').path
+    }
+
+    def 'should find correct legacy job configuration file'() {
+        given:
+        def rootDir = 'Z:\\JenkinsRoot\\job\\JobRoot'
+        def job = Mock(Job) {
+            _ * it.getRootDir() >> new File(rootDir)
+        }
+
+        when:
+        File file = BlameFilePaths.getLegacyConfigFile(job)
+
+        then:
         file.path == new File(rootDir, 'buildtimeblameconfig').path
     }
 

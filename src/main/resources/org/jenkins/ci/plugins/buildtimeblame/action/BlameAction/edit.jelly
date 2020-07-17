@@ -2,7 +2,7 @@
 <j:jelly xmlns:j="jelly:core" xmlns:f="/lib/form">
     <f:form action="reprocessBlameReport" method="post" name="reprocessBlameReport">
         <f:entry>
-            <f:repeatable name="relevantSteps" var="relevantStep" items="${it}" noAddButton="true" minimum="1">
+            <f:repeatable name="relevantSteps" var="relevantStep" items="${it.relevantSteps}" noAddButton="true" minimum="1">
                 <table>
                     <f:entry title="Regex Search Key" field="key">
                         <f:textbox value="${relevantStep.pattern}"/>
@@ -19,6 +19,11 @@
                     </f:entry>
                 </table>
             </f:repeatable>
+            <table>
+                <f:entry title="Maximum Builds To Process" field="maxBuilds">
+                   <f:number value="${it.maxBuilds}"/>
+                </f:entry>
+            </table>
             <f:submit value="Reprocess Report"/>
         </f:entry>
     </f:form>
