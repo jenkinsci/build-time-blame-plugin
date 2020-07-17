@@ -18,6 +18,8 @@ import org.jenkins.ci.plugins.buildtimeblame.io.ReportIO
 import org.kohsuke.stapler.StaplerRequest
 import org.kohsuke.stapler.StaplerResponse
 
+import java.util.stream.Collectors
+
 import static org.jenkins.ci.plugins.buildtimeblame.io.StaplerUtils.getAsList
 import static org.jenkins.ci.plugins.buildtimeblame.io.StaplerUtils.redirectToParentURI
 
@@ -89,6 +91,7 @@ class BlameAction implements Action {
 
     private List<Integer> getFailedBuildNumbers() {
         def firstSuccessful = report.buildResults.collect({ it.build.getNumber() }).min()
+
         return buildsWithoutTimestamps
                 .collect({ it.getNumber() })
                 .findAll({ it > firstSuccessful })
@@ -107,19 +110,23 @@ class BlameAction implements Action {
     }
 
     private List<BuildResult> getBuildResults(LogParser logParser) {
-        job.getBuilds().findAll { Run run ->
-            return !run.isBuilding() && run.result.isBetterOrEqualTo(Result.UNSTABLE)
-        }.collect { Run run ->
-            try {
-                return logParser.getBuildResult(run)
-            } catch (RuntimeException ignored) {
-                buildsWithoutTimestamps.add(run)
-                return null
-            } finally {
-                lastProcessedBuild = Math.max(lastProcessedBuild, run.getNumber())
-            }
-        }.findAll {
-            it != null
-        }
+        return job.getBuilds().stream()
+                .filter({ Run run ->
+                    return !run.isBuilding() && run.result.isBetterOrEqualTo(Result.UNSTABLE)
+                })
+                .map({ Run run ->
+                    try {
+                        return logParser.getBuildResult(run)
+                    } catch (RuntimeException ignored) {
+                        buildsWithoutTimestamps.add(run)
+                        return null
+                    } finally {
+                        lastProcessedBuild = Math.max(lastProcessedBuild, run.getNumber())
+                    }
+                })
+                .filter({
+                    it != null
+                })
+                .collect(Collectors.toList()) as List<BuildResult>
     }
 }

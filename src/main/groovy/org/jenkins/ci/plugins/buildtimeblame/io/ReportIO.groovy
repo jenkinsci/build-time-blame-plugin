@@ -1,9 +1,7 @@
 //  Copyright (c) 2016 Deere & Company
 package org.jenkins.ci.plugins.buildtimeblame.io
 
-import com.google.common.base.Optional
 import hudson.model.Run
-import hudson.plugins.timestamper.Timestamp
 import net.sf.json.JSONObject
 import net.sf.json.JsonConfig
 import net.sf.json.util.PropertyFilter
@@ -35,7 +33,7 @@ class ReportIO {
         try {
             Optional.of(fromObject(getReportFile(build).text).collect { JSONObject object -> mapToMatch(object) })
         } catch (Exception ignored) {
-            return Optional.absent()
+            return Optional.empty()
         }
     }
 
@@ -48,10 +46,7 @@ class ReportIO {
                 label: object.get('label'),
                 matchedLine: object.get('matchedLine'),
                 previousElapsedTime: object.get('previousElapsedTime') as long,
-                timestamp: new Timestamp(
-                        object.get('timestamp').get('elapsedMillis') as long,
-                        object.get('timestamp').get('millisSinceEpoch') as long,
-                )
+                elapsedMillis: object.get('elapsedMillis') as long
         )
     }
 

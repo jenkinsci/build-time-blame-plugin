@@ -12,7 +12,7 @@ class BlameFilePaths {
     }
 
     static File getReportFile(Run run) {
-        getFile(run, 'buildtimeblamematches')
+        getFile(run, 'build-time-blame-matches.json')
     }
 
     private static File getFile(PersistenceRoot persistenceRoot, String fileName) {

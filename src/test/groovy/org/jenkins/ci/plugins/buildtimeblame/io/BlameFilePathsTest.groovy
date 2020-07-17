@@ -32,6 +32,6 @@ class BlameFilePathsTest extends Specification {
         File file = BlameFilePaths.getReportFile(build)
 
         then:
-        file.path == new File(rootDir, 'buildtimeblamematches').path
+        file.path == new File(rootDir, 'build-time-blame-matches.json').path
     }
 }

@@ -17,7 +17,7 @@ class ConsoleLogMatchTest extends Specification {
 
     def 'should return formatted elapsed time'() {
         given:
-        def logResult = new ConsoleLogMatch(timestamp: new Timestamp(500010, 0))
+        def logResult = new ConsoleLogMatch(elapsedMillis: 500010)
 
         expect:
         logResult.getElapsedTime() == '08:20.010'
@@ -25,7 +25,7 @@ class ConsoleLogMatchTest extends Specification {
 
     def 'should return formatted time taken'() {
         given:
-        def logResult = new ConsoleLogMatch(timestamp: new Timestamp(500015, 0), previousElapsedTime: 50)
+        def logResult = new ConsoleLogMatch(elapsedMillis: 500015, previousElapsedTime: 50)
 
         expect:
         logResult.getTimeTaken() == '08:19.965'
@@ -33,7 +33,7 @@ class ConsoleLogMatchTest extends Specification {
 
     def 'should return un-formatted time taken'() {
         given:
-        def logResult = new ConsoleLogMatch(timestamp: new Timestamp(465, 0), previousElapsedTime: 15)
+        def logResult = new ConsoleLogMatch(elapsedMillis: 465, previousElapsedTime: 15)
 
         expect:
         logResult.getUnFormattedTimeTaken() == 450
