@@ -12,7 +12,7 @@ import static org.jenkins.ci.plugins.buildtimeblame.io.BlameFilePaths.getLegacyC
 
 class ConfigIO {
     Job job
-    ObjectMapper objectMapper = new ObjectMapper()
+    private static ObjectMapper objectMapper = new ObjectMapper()
             .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
 
     ConfigIO(Job job) {
