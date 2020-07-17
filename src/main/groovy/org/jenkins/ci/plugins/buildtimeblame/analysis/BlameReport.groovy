@@ -76,24 +76,19 @@ class BlameReport {
     private List<ConsoleLogMatch> calculateMeanBuildResult() {
         List<ConsoleLogMatch> meanBuildResult = []
         Multimap<String, ConsoleLogMatch> allBuildResults = getAllBuildResults()
-        def previousElapsedTime = 0
 
         for (String label : allBuildResults.keySet()) {
-            def meanElapsedMillis = getMeanElapsedTime(allBuildResults.get(label).elapsedMillis as List<Long>)
+            def meanElapsedMillis = mean(allBuildResults.get(label).elapsedMillis as List<Long>)
+            def meanElapsedMillisOfNextMatch = mean(allBuildResults.get(label).elapsedMillisOfNextMatch as List<Long>)
 
             meanBuildResult.add(new ConsoleLogMatch(
                     label: label,
                     elapsedMillis: meanElapsedMillis,
                     matchedLine: 'N/A',
-                    previousElapsedTime: previousElapsedTime,
+                    elapsedMillisOfNextMatch: meanElapsedMillisOfNextMatch,
             ))
-            previousElapsedTime = meanElapsedMillis
         }
         return meanBuildResult
-    }
-
-    private static Long getMeanElapsedTime(List<Long> elapsedMillis) {
-        return mean(elapsedMillis)
     }
 
     private static long mean(List<Long> values) {

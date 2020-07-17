@@ -25,12 +25,12 @@ class LogParserTest extends Specification {
     def 'should collate console output with timestamps on matched lines'() {
         given:
         def build = Mock(Run)
-        def logs = ['theFirstLine', 'theSecondLine', 'theThirdLine']
+        def logs = ['theFirstLine', 'theSecondLine', 'theThirdLine', 'theFourthLine']
         def timestamps = getRandomTimestamps(logs.size())
         setupMockTimestamperLog(build, withTimestamps(logs, timestamps))
         def expected = [
-                buildLogResult('Part One', 'theFirstLine', timestamps, 0, 0),
-                buildLogResult('Part Two', 'theThirdLine', timestamps, 2, 0),
+                buildLogResult('Part One', 'theFirstLine', timestamps, 0, 2),
+                buildLogResult('Part Two', 'theThirdLine', timestamps, 2, -1),
         ]
 
         def logParser = new LogParser([
@@ -42,9 +42,9 @@ class LogParserTest extends Specification {
         BuildResult buildResult = logParser.getBuildResult(build)
 
         then:
-        1 * reportIO.write(expected)
         buildResult.build == build
         buildResult.consoleLogMatches == expected
+//        1 * reportIO.write(expected)
     }
 
     def 'should keep single match steps from one build to the next'() {
@@ -87,12 +87,12 @@ class LogParserTest extends Specification {
         then:
         buildResult.build == build
         buildResult.consoleLogMatches == [
-                buildLogResult('Loaded', 'aoneline', timestamps, 0, 0),
-                buildLogResult('Tested', 'afiveline', timestamps, 2, 0),
-                buildLogResult('Loaded', 'oneoneone', timestamps, 3, 2),
-                buildLogResult('Loaded', 'one', timestamps, 4, 3),
-                buildLogResult('Tested', 'five', timestamps, 5, 4),
-                buildLogResult('Loaded', 'one', timestamps, 6, 5),
+                buildLogResult('Loaded', 'aoneline', timestamps, 0, 2),
+                buildLogResult('Tested', 'afiveline', timestamps, 2, 3),
+                buildLogResult('Loaded', 'oneoneone', timestamps, 3, 4),
+                buildLogResult('Loaded', 'one', timestamps, 4, 5),
+                buildLogResult('Tested', 'five', timestamps, 5, 6),
+                buildLogResult('Loaded', 'one', timestamps, 6, -1),
         ]
     }
 
@@ -129,11 +129,11 @@ class LogParserTest extends Specification {
         then:
         buildResult.build == build
         buildResult.consoleLogMatches == [
-                buildLogResult('Include Every Time', 'aoneline', timestamps, 0, 0),
-                buildLogResult('Include First Time', 'afiveline', timestamps, 2, 0),
-                buildLogResult('Include Every Time', 'oneoneone', timestamps, 3, 2),
-                buildLogResult('Include Every Time', 'one', timestamps, 4, 3),
-                buildLogResult('Include Every Time', 'one', timestamps, 6, 4),
+                buildLogResult('Include Every Time', 'aoneline', timestamps, 0, 2),
+                buildLogResult('Include First Time', 'afiveline', timestamps, 2, 3),
+                buildLogResult('Include Every Time', 'oneoneone', timestamps, 3, 4),
+                buildLogResult('Include Every Time', 'one', timestamps, 4, 6),
+                buildLogResult('Include Every Time', 'one', timestamps, 6, -1),
         ]
     }
 
@@ -176,34 +176,8 @@ class LogParserTest extends Specification {
         then:
         buildResult.build == build
         buildResult.consoleLogMatches == [
-                buildLogResult('First', 'line2', timestamps, 0, 0),
-                buildLogResult('Second', 'line3', timestamps, 1, 0),
-        ]
-    }
-
-    def 'should use 0 as the base timestamp'() {
-        given:
-        def build = Mock(Run)
-        def timestamps = [0] + getRandomTimestamps(2) as List<Long>
-        setupMockTimestamperLog(build, [
-                new TimedLog(log: 'line1'),
-                new TimedLog(log: 'line2', elapsedMillis: Optional.of(timestamps[1])),
-                new TimedLog(log: 'line3', elapsedMillis: Optional.of(timestamps[2]))
-        ])
-
-        def logParser = new LogParser([
-                new RelevantStep(~/line1/, 'First', false),
-                new RelevantStep(~/line3/, 'Second', false),
-        ])
-
-        when:
-        BuildResult buildResult = logParser.getBuildResult(build)
-
-        then:
-        buildResult.build == build
-        buildResult.consoleLogMatches == [
-                buildLogResult('First', 'line1', timestamps, 0, 0),
-                buildLogResult('Second', 'line3', timestamps, 2, 0),
+                buildLogResult('First', 'line2', timestamps, 0, 1),
+                buildLogResult('Second', 'line3', timestamps, 1, -1),
         ]
     }
 
@@ -254,12 +228,12 @@ class LogParserTest extends Specification {
                 .collect(Collectors.toList())
     }
 
-    private static ConsoleLogMatch buildLogResult(String label, String line, List<Long> elapsedMillis, int index, int previousIndex) {
+    private static ConsoleLogMatch buildLogResult(String label, String line, List<Long> elapsedMillis, int index, int nextIndex) {
         return new ConsoleLogMatch(
                 label: label,
                 matchedLine: line,
                 elapsedMillis: elapsedMillis[index],
-                previousElapsedTime: index == 0 ? 0 : elapsedMillis[previousIndex]
+                elapsedMillisOfNextMatch: elapsedMillis[nextIndex]
         )
     }
 }

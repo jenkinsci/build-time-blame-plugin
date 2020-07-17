@@ -23,24 +23,28 @@ class LogParser {
     }
 
     private List<ConsoleLogMatch> computeRelevantLogLines(Run run) {
-        def result = []
-        def previousElapsedTime = 0
+        List<ConsoleLogMatch> result = []
         def addSingleMatchIfFound = { String label, String line, Long elapsedMillis ->
             result.add(new ConsoleLogMatch(
                     label: label,
                     matchedLine: line,
-                    elapsedMillis: elapsedMillis,
-                    previousElapsedTime: previousElapsedTime,
+                    elapsedMillis: elapsedMillis
             ))
-            previousElapsedTime = elapsedMillis
         }
 
-        processMatches(run, addSingleMatchIfFound)
+        def lastTimestampOfBuild = processMatches(run, addSingleMatchIfFound)
+        def nextMatchTimestamp = lastTimestampOfBuild
+
+        result.reverse().forEach({ ConsoleLogMatch match ->
+            match.elapsedMillisOfNextMatch = nextMatchTimestamp
+            nextMatchTimestamp = match.elapsedMillis
+        })
+
         ReportIO.getInstance(run).write(result)
         return result
     }
 
-    private void processMatches(Run run, Closure onMatch) {
+    private int processMatches(Run run, Closure onMatch) {
         long mostRecentTimestamp = 0
         def steps = relevantSteps.collect()
         def reader = TimestamperAPI.get().read(run, 'appendLog&elapsed=S')
@@ -65,6 +69,8 @@ class LogParser {
         if (!hasTimestamps) {
             throw new TimestampMissingException()
         }
+
+        return mostRecentTimestamp
     }
 
     static Optional<RelevantStep> getMatchingRegex(String value, List<RelevantStep> steps) {
