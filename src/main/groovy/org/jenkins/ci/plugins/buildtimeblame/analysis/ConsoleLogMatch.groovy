@@ -4,7 +4,6 @@ package org.jenkins.ci.plugins.buildtimeblame.analysis
 import groovy.transform.AutoClone
 import groovy.transform.EqualsAndHashCode
 import groovy.transform.ToString
-import hudson.plugins.timestamper.Timestamp
 import org.apache.commons.lang.time.DurationFormatUtils
 
 @AutoClone
@@ -15,11 +14,11 @@ class ConsoleLogMatch {
 
     String label
     String matchedLine
-    Timestamp timestamp
+    long elapsedMillis
     long previousElapsedTime
 
     String getElapsedTime() {
-        format(timestamp.elapsedMillis)
+        format(elapsedMillis)
     }
 
     String getTimeTaken() {
@@ -27,7 +26,7 @@ class ConsoleLogMatch {
     }
 
     long getUnFormattedTimeTaken() {
-        timestamp.elapsedMillis - previousElapsedTime
+        elapsedMillis - previousElapsedTime
     }
 
     String getMatchedLine() {

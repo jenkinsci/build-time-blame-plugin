@@ -5,7 +5,6 @@ import com.google.common.collect.LinkedListMultimap
 import com.google.common.collect.Multimap
 import groovy.transform.EqualsAndHashCode
 import groovy.transform.ToString
-import hudson.plugins.timestamper.Timestamp
 import hudson.util.Graph
 import org.jfree.chart.ChartFactory
 import org.jfree.chart.JFreeChart
@@ -80,24 +79,21 @@ class BlameReport {
         def previousElapsedTime = 0
 
         for (String label : allBuildResults.keySet()) {
-            def meanTimestamp = getMeanTimestamp(allBuildResults.get(label).timestamp)
+            def meanElapsedMillis = getMeanElapsedTime(allBuildResults.get(label).elapsedMillis as List<Long>)
 
             meanBuildResult.add(new ConsoleLogMatch(
                     label: label,
-                    timestamp: meanTimestamp,
+                    elapsedMillis: meanElapsedMillis,
                     matchedLine: 'N/A',
                     previousElapsedTime: previousElapsedTime,
             ))
-            previousElapsedTime = meanTimestamp.elapsedMillis
+            previousElapsedTime = meanElapsedMillis
         }
         return meanBuildResult
     }
 
-    private static Timestamp getMeanTimestamp(Collection<Timestamp> timestamps) {
-        return new Timestamp(
-                mean(timestamps*.elapsedMillis as List<Long>),
-                mean(timestamps*.millisSinceEpoch as List<Long>)
-        )
+    private static Long getMeanElapsedTime(List<Long> elapsedMillis) {
+        return mean(elapsedMillis)
     }
 
     private static long mean(List<Long> values) {

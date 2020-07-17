@@ -1,26 +1,26 @@
 //  Copyright (c) 2016 Deere & Company
 package org.jenkins.ci.plugins.buildtimeblame.io
 
-import org.jenkins.ci.plugins.buildtimeblame.analysis.RelevantStep
-import hudson.model.AbstractProject
+import hudson.model.Job
 import net.sf.json.JSONArray
 import net.sf.json.JSONObject
+import org.jenkins.ci.plugins.buildtimeblame.analysis.RelevantStep
 
 import static BlameFilePaths.getConfigFile
 
 class ConfigIO {
-    AbstractProject project
+    Job job
 
-    ConfigIO(AbstractProject project) {
-        this.project = project
+    ConfigIO(Job job) {
+        this.job = job
     }
 
     public void write(List<RelevantStep> relevantSteps) {
-        getConfigFile(project).write(convertToString(relevantSteps))
+        getConfigFile(job).write(convertToString(relevantSteps))
     }
 
     public List<RelevantStep> readOrDefault(List<RelevantStep> defaultValue = []) {
-        def file = getConfigFile(project)
+        def file = getConfigFile(job)
 
         try {
             readValue(JSONArray.fromObject(file.text).collect() as List<JSONObject>)

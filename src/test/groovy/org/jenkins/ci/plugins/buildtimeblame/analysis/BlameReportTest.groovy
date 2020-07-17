@@ -45,24 +45,24 @@ class BlameReportTest extends Specification {
         given:
         def buildResults = [
                 new BuildResult(consoleLogMatches: [
-                        new ConsoleLogMatch(label: 'Start', timestamp: new Timestamp(0, 0)),
-                        new ConsoleLogMatch(label: 'Middle', timestamp: new Timestamp(1000, 0)),
-                        new ConsoleLogMatch(label: 'Finish', timestamp: new Timestamp(25000, 0)),
+                        new ConsoleLogMatch(label: 'Start', elapsedMillis: 0),
+                        new ConsoleLogMatch(label: 'Middle', elapsedMillis: 1000),
+                        new ConsoleLogMatch(label: 'Finish', elapsedMillis: 25000),
                 ]),
                 new BuildResult(consoleLogMatches: [
-                        new ConsoleLogMatch(label: 'Start', timestamp: new Timestamp(500, 0)),
-                        new ConsoleLogMatch(label: 'Middle', timestamp: new Timestamp(2000, 0)),
-                        new ConsoleLogMatch(label: 'Finish', timestamp: new Timestamp(3000, 0)),
+                        new ConsoleLogMatch(label: 'Start', elapsedMillis: 500),
+                        new ConsoleLogMatch(label: 'Middle', elapsedMillis: 2000),
+                        new ConsoleLogMatch(label: 'Finish', elapsedMillis: 3000),
                 ]),
                 new BuildResult(consoleLogMatches: [
-                        new ConsoleLogMatch(label: 'Start', timestamp: new Timestamp(100, 0)),
-                        new ConsoleLogMatch(label: 'Middle', timestamp: new Timestamp(3000, 0)),
-                        new ConsoleLogMatch(label: 'Finish', timestamp: new Timestamp(4000, 0)),
+                        new ConsoleLogMatch(label: 'Start', elapsedMillis: 100),
+                        new ConsoleLogMatch(label: 'Middle', elapsedMillis: 3000),
+                        new ConsoleLogMatch(label: 'Finish', elapsedMillis: 4000),
                 ]),
                 new BuildResult(consoleLogMatches: [
-                        new ConsoleLogMatch(label: 'Start', timestamp: new Timestamp(0, 0)),
-                        new ConsoleLogMatch(label: 'Middle', timestamp: new Timestamp(3000, 0)),
-                        new ConsoleLogMatch(label: 'Finish', timestamp: new Timestamp(5000, 0)),
+                        new ConsoleLogMatch(label: 'Start', elapsedMillis: 0),
+                        new ConsoleLogMatch(label: 'Middle', elapsedMillis: 3000),
+                        new ConsoleLogMatch(label: 'Finish', elapsedMillis: 5000),
                 ]),
         ]
 
@@ -102,14 +102,14 @@ class BlameReportTest extends Specification {
 
         def buildResults = [
                 new BuildResult(consoleLogMatches: [
-                        new ConsoleLogMatch(label: 'Start', timestamp: new Timestamp(0, 0)),
-                        new ConsoleLogMatch(label: 'Middle', timestamp: new Timestamp(1000, 0)),
-                        new ConsoleLogMatch(label: 'Finish', timestamp: new Timestamp(25000, 0), previousElapsedTime: 1000),
+                        new ConsoleLogMatch(label: 'Start', elapsedMillis: 0),
+                        new ConsoleLogMatch(label: 'Middle', elapsedMillis: 1000),
+                        new ConsoleLogMatch(label: 'Finish', elapsedMillis: 25000, previousElapsedTime: 1000),
                 ], build: latestBuild),
                 new BuildResult(consoleLogMatches: [
-                        new ConsoleLogMatch(label: 'Start', timestamp: new Timestamp(500, 0)),
-                        new ConsoleLogMatch(label: 'Middle', timestamp: new Timestamp(2000, 0), previousElapsedTime: 500),
-                        new ConsoleLogMatch(label: 'Finish', timestamp: new Timestamp(3000, 0), previousElapsedTime: 2000),
+                        new ConsoleLogMatch(label: 'Start', elapsedMillis: 500),
+                        new ConsoleLogMatch(label: 'Middle', elapsedMillis: 2000, previousElapsedTime: 500),
+                        new ConsoleLogMatch(label: 'Finish', elapsedMillis: 3000, previousElapsedTime: 2000),
                 ], build: previousBuild),
         ]
 
@@ -175,6 +175,6 @@ class BlameReportTest extends Specification {
     }
 
     ConsoleLogMatch buildExpectedMedianResult(String label, int elapsedTime, int previousTime) {
-        new ConsoleLogMatch(label: label, timestamp: new Timestamp(elapsedTime, 0), matchedLine: 'N/A', previousElapsedTime: previousTime)
+        new ConsoleLogMatch(label: label, elapsedMillis: elapsedTime, matchedLine: 'N/A', previousElapsedTime: previousTime)
     }
 }

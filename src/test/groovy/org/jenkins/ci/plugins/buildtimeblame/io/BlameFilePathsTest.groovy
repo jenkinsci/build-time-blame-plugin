@@ -1,7 +1,8 @@
 //  Copyright (c) 2016 Deere & Company
 package org.jenkins.ci.plugins.buildtimeblame.io
 
-import hudson.model.AbstractProject
+
+import hudson.model.Job
 import hudson.model.Run
 import spock.lang.Specification
 
@@ -9,12 +10,12 @@ class BlameFilePathsTest extends Specification {
     def 'should find correct job configuration file'() {
         given:
         def rootDir = 'Z:\\JenkinsRoot\\job\\JobRoot'
-        def project = Mock(AbstractProject) {
+        def job = Mock(Job) {
             _ * it.getRootDir() >> new File(rootDir)
         }
 
         when:
-        File file = BlameFilePaths.getConfigFile(project)
+        File file = BlameFilePaths.getConfigFile(job)
 
         then:
         file.path == new File(rootDir, 'buildtimeblameconfig').path
@@ -31,6 +32,6 @@ class BlameFilePathsTest extends Specification {
         File file = BlameFilePaths.getReportFile(build)
 
         then:
-        file.path == new File(rootDir, 'buildtimeblamematches').path
+        file.path == new File(rootDir, 'build-time-blame-matches.json').path
     }
 }

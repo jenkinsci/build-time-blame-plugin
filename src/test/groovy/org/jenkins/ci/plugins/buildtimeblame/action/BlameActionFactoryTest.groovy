@@ -1,22 +1,33 @@
 //  Copyright (c) 2016 Deere & Company
 package org.jenkins.ci.plugins.buildtimeblame.action
 
-import hudson.model.AbstractProject
-import hudson.model.TransientProjectActionFactory
+import hudson.model.Job
+import jenkins.model.TransientActionFactory
 import spock.lang.Specification
 
 class BlameActionFactoryTest extends Specification {
-    def 'should add action to all projects'() {
+    def 'should add action to all jobs'() {
         given:
-        def project = Mock(AbstractProject) {
+        def job = Mock(Job) {
             it.rootDir >> new File('')
         }
-        TransientProjectActionFactory factory = new BlameActionFactory()
+        TransientActionFactory<Job> factory = new BlameActionFactory()
 
         when:
-        def addedActions = factory.createFor(project)
+        def addedActions = factory.createFor(job)
 
         then:
-        addedActions == [new BlameAction(project)]
+        addedActions == [new BlameAction(job)]
+    }
+
+    def 'should apply to all jobs'() {
+        given:
+        TransientActionFactory<Job> factory = new BlameActionFactory()
+
+        when:
+        def type = factory.type()
+
+        then:
+        type == Job
     }
 }

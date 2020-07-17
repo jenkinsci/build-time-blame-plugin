@@ -1,17 +1,12 @@
 //  Copyright (c) 2016 Deere & Company
 package org.jenkins.ci.plugins.buildtimeblame.analysis
 
-import com.google.common.base.Optional
 import hudson.model.Run
-import hudson.plugins.timestamper.Timestamp
-import hudson.plugins.timestamper.io.TimestampsReader
+import hudson.plugins.timestamper.api.TimestamperAPI
 import org.jenkins.ci.plugins.buildtimeblame.io.ReportIO
-
-import static org.jenkins.ci.plugins.buildtimeblame.io.CustomFileReader.eachLineOnlyLF
 
 class LogParser {
     List<RelevantStep> relevantSteps = []
-    int maximumMissingTimestamps = 1
 
     LogParser(List<RelevantStep> relevantSteps) {
         this.relevantSteps = relevantSteps.collect()
@@ -30,14 +25,14 @@ class LogParser {
     private List<ConsoleLogMatch> computeRelevantLogLines(Run run) {
         def result = []
         def previousElapsedTime = 0
-        def addSingleMatchIfFound = { String label, String line, Timestamp timestamp ->
+        def addSingleMatchIfFound = { String label, String line, Long elapsedMillis ->
             result.add(new ConsoleLogMatch(
                     label: label,
                     matchedLine: line,
-                    timestamp: timestamp,
+                    elapsedMillis: elapsedMillis,
                     previousElapsedTime: previousElapsedTime,
             ))
-            previousElapsedTime = timestamp.elapsedMillis
+            previousElapsedTime = elapsedMillis
         }
 
         processMatches(run, addSingleMatchIfFound)
@@ -46,38 +41,29 @@ class LogParser {
     }
 
     private void processMatches(Run run, Closure onMatch) {
-        def numberOfMissingTimestamps = 0
-        Timestamp mostRecentTimestamp
-
-        def timestampsReader = new TimestampsReader(run)
+        long mostRecentTimestamp = 0
         def steps = relevantSteps.collect()
-        def inputStream = run.getLogInputStream()
+        def reader = TimestamperAPI.get().read(run, 'appendLog&elapsed=S')
+        def hasTimestamps = false
 
         try {
-            eachLineOnlyLF(inputStream).forEach { String line ->
-                def nextTimestamp = timestampsReader.read()
-                def step = getMatchingRegex(line, steps)
+            reader.lines()
+                    .map { line -> TimedLog.fromText(line) }
+                    .forEach { TimedLog line ->
+                        def timestamp = line.elapsedMillis.orElse(mostRecentTimestamp)
+                        mostRecentTimestamp = timestamp
+                        hasTimestamps = mostRecentTimestamp != 0
 
-                if (nextTimestamp.isPresent()) {
-                    mostRecentTimestamp = nextTimestamp.get()
-                } else {
-                    numberOfMissingTimestamps++
-                }
-
-                if (step.isPresent()) {
-                    if (nextTimestamp.isPresent()) {
-                        def timestamp = nextTimestamp.get()
-                        onMatch(step.get().label, line, timestamp)
-                        mostRecentTimestamp = nextTimestamp.get()
-                    } else if (mostRecentTimestamp && numberOfMissingTimestamps <= maximumMissingTimestamps) {
-                        onMatch(step.get().label, line, mostRecentTimestamp)
-                    } else {
-                        throw new TimestampMissingException()
+                        getMatchingRegex(line.log, steps).ifPresent({ step ->
+                            onMatch(step.label, line.log, timestamp)
+                        })
                     }
-                }
-            }
         } finally {
-            inputStream.close()
+            reader.close()
+        }
+
+        if (!hasTimestamps) {
+            throw new TimestampMissingException()
         }
     }
 
@@ -90,7 +76,7 @@ class LogParser {
                 return Optional.of(step)
             }
         }
-        return Optional.absent()
+        return Optional.empty()
     }
 
     public static class TimestampMissingException extends RuntimeException {

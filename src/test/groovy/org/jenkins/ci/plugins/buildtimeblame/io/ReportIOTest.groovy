@@ -2,9 +2,7 @@
 package org.jenkins.ci.plugins.buildtimeblame.io
 
 import org.jenkins.ci.plugins.buildtimeblame.analysis.ConsoleLogMatch
-import com.google.common.base.Optional
 import hudson.model.Run
-import hudson.plugins.timestamper.Timestamp
 import spock.lang.Specification
 
 class ReportIOTest extends Specification {
@@ -23,35 +21,35 @@ class ReportIOTest extends Specification {
     def 'should serialize list to file without derived fields'() {
         given:
         def report = [
-                new ConsoleLogMatch(label: 'Finished', matchedLine: 'Did it', previousElapsedTime: 50, timestamp: new Timestamp(1, 2)),
+                new ConsoleLogMatch(label: 'Finished', matchedLine: 'Did it', previousElapsedTime: 50, elapsedMillis: 1),
         ]
 
         when:
         new ReportIO(build).write(report)
 
         then:
-        getTestFile().text == '[{"label":"Finished","matchedLine":"Did it","previousElapsedTime":50,"timestamp":{"elapsedMillis":1,"elapsedMillisKnown":true,"millisSinceEpoch":2}}]'
+        getTestFile().text == '[{"matchedLine":"Did it","previousElapsedTime":50,"label":"Finished","elapsedMillis":1}]'
     }
 
     def 'should load list from file'() {
         given:
-        getTestFile().write('[{"label":"Finished","matchedLine":"Did it","previousElapsedTime":50,"timestamp":{"elapsedMillis":1,"millisSinceEpoch":2}}]')
+        getTestFile().write('[{"label":"Finished","matchedLine":"Did it","previousElapsedTime":50,"elapsedMillis":1}]')
 
         when:
         def report = new ReportIO(build).readFile().get()
 
         then:
         report == [
-                new ConsoleLogMatch(label: 'Finished', matchedLine: 'Did it', previousElapsedTime: 50, timestamp: new Timestamp(1, 2)),
+                new ConsoleLogMatch(label: 'Finished', matchedLine: 'Did it', previousElapsedTime: 50, elapsedMillis: 1),
         ]
     }
 
     def 'should use same format for read and write'() {
         given:
         def expected = [
-                new ConsoleLogMatch(label: 'Begin', matchedLine: 'Did it', previousElapsedTime: 50, timestamp: new Timestamp(1, 2)),
-                new ConsoleLogMatch(label: 'Started', matchedLine: 'Did nothing', previousElapsedTime: 30, timestamp: new Timestamp(3, 4)),
-                new ConsoleLogMatch(label: 'Finished', matchedLine: 'Did all', previousElapsedTime: 21, timestamp: new Timestamp(5, 6)),
+                new ConsoleLogMatch(label: 'Begin', matchedLine: 'Did it', previousElapsedTime: 50, elapsedMillis: 1),
+                new ConsoleLogMatch(label: 'Started', matchedLine: 'Did nothing', previousElapsedTime: 30, elapsedMillis: 3),
+                new ConsoleLogMatch(label: 'Finished', matchedLine: 'Did all', previousElapsedTime: 21, elapsedMillis: 5),
         ]
 
         when:
@@ -78,12 +76,12 @@ class ReportIOTest extends Specification {
         getTestFile().write('any text')
 
         expect:
-        new ReportIO(build).readFile() == Optional.absent()
+        new ReportIO(build).readFile() == Optional.empty()
     }
 
     def 'should  return empty optional if no content'() {
         expect:
-        new ReportIO(build).readFile() == Optional.absent()
+        new ReportIO(build).readFile() == Optional.empty()
     }
 
     private static File getTestFile() {

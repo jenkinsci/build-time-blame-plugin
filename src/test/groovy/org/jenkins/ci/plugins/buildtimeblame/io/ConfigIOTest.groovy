@@ -1,18 +1,18 @@
 //  Copyright (c) 2016 Deere & Company
 package org.jenkins.ci.plugins.buildtimeblame.io
 
-import org.jenkins.ci.plugins.buildtimeblame.analysis.RelevantStep
-import hudson.model.AbstractProject
+import hudson.model.Job
 import net.sf.json.JSONObject
+import org.jenkins.ci.plugins.buildtimeblame.analysis.RelevantStep
 import spock.lang.Specification
 
 class ConfigIOTest extends Specification {
-    AbstractProject project
+    Job job
 
     void setup() {
         GroovyMock(BlameFilePaths, global: true)
-        project = Mock(AbstractProject)
-        _ * BlameFilePaths.getConfigFile(project) >> getTestFile()
+        job = Mock(Job)
+        _ * BlameFilePaths.getConfigFile(job) >> getTestFile()
     }
 
     void cleanup() {
@@ -24,7 +24,7 @@ class ConfigIOTest extends Specification {
         def relevantSteps = [new RelevantStep(~/.*any.*/, 'label value', false)]
 
         when:
-        new ConfigIO(project).write(relevantSteps)
+        new ConfigIO(job).write(relevantSteps)
 
         then:
         getTestFile().text == '[{"key":".*any.*","label":"label value","onlyFirstMatch":false}]'
@@ -35,7 +35,7 @@ class ConfigIOTest extends Specification {
         getTestFile().write('[{"key":".*Started.*","label":"Job Started","onlyFirstMatch":true}]')
 
         when:
-        List<RelevantStep> relevantSteps = new ConfigIO(project).readOrDefault()
+        List<RelevantStep> relevantSteps = new ConfigIO(job).readOrDefault()
 
         then:
         relevantSteps.toListString() == [new RelevantStep(~/.*Started.*/, 'Job Started', true)].toListString()
@@ -46,7 +46,7 @@ class ConfigIOTest extends Specification {
         getTestFile().write('[{"key":".*Started.*","label":"Job Started"}]')
 
         when:
-        List<RelevantStep> relevantSteps = new ConfigIO(project).readOrDefault()
+        List<RelevantStep> relevantSteps = new ConfigIO(job).readOrDefault()
 
         then:
         relevantSteps.toListString() == [new RelevantStep(~/.*Started.*/, 'Job Started', false)].toListString()
@@ -108,8 +108,8 @@ class ConfigIOTest extends Specification {
         def expected = [new RelevantStep(~/.*Finished NPM.*/, 'NPM Finished', false)]
 
         when:
-        new ConfigIO(project).write(expected.clone() as List<RelevantStep>)
-        def relevantSteps = new ConfigIO(project).readOrDefault()
+        new ConfigIO(job).write(expected.clone() as List<RelevantStep>)
+        def relevantSteps = new ConfigIO(job).readOrDefault()
 
         then:
         relevantSteps.toListString() == expected.toListString()
@@ -120,7 +120,7 @@ class ConfigIOTest extends Specification {
         def defaultValue = [new RelevantStep(~/.*/, 'ignored', false)]
 
         when:
-        def relevantSteps = new ConfigIO(project).readOrDefault(defaultValue.clone() as List<RelevantStep>)
+        def relevantSteps = new ConfigIO(job).readOrDefault(defaultValue.clone() as List<RelevantStep>)
 
         then:
         relevantSteps == defaultValue
@@ -132,7 +132,7 @@ class ConfigIOTest extends Specification {
         getTestFile().write('not json')
 
         when:
-        def relevantSteps = new ConfigIO(project).readOrDefault(defaultValue.clone() as List<RelevantStep>)
+        def relevantSteps = new ConfigIO(job).readOrDefault(defaultValue.clone() as List<RelevantStep>)
 
         then:
         relevantSteps == defaultValue
@@ -140,7 +140,7 @@ class ConfigIOTest extends Specification {
 
     def 'should return empty value if no file content and no default'() {
         when:
-        def relevantSteps = new ConfigIO(project).readOrDefault()
+        def relevantSteps = new ConfigIO(job).readOrDefault()
 
         then:
         relevantSteps == []
