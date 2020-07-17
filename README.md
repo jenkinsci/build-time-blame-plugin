@@ -46,7 +46,9 @@ A Jenkins plugin for analyzing the historical console output of a Job with the g
     These keys should match when the particular step is complete.
     + Label: The matches will be shown with this label in the report.
     + Only Use First Match: If this box is checked, the search key will not be checked against after the first line it matches.
-
+1. (Optional) Set a limit on the "Maximum Builds To Process"
+   + By default, the logs for all successfully completed builds will be scanned. 
+   For some jobs with long logs or many builds, limiting the report may allow it to load more quickly.
 1. Click `Reprocess Report`.
 This will regenerate the report by searching for the configured steps in the console output for each successful run of the job that had Timestamps enabled.
 Note: This process can take some time for jobs with a lot of console output and/or a lot of build history.
