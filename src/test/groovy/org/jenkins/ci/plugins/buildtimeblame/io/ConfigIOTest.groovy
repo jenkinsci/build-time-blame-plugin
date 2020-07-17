@@ -1,8 +1,8 @@
 //  Copyright (c) 2016 Deere & Company
 package org.jenkins.ci.plugins.buildtimeblame.io
 
+import com.fasterxml.jackson.databind.ObjectMapper
 import hudson.model.Job
-import net.sf.json.JSONObject
 import org.jenkins.ci.plugins.buildtimeblame.analysis.RelevantStep
 import spock.lang.Specification
 
@@ -13,29 +13,20 @@ class ConfigIOTest extends Specification {
         GroovyMock(BlameFilePaths, global: true)
         job = Mock(Job)
         _ * BlameFilePaths.getConfigFile(job) >> getTestFile()
+        _ * BlameFilePaths.getLegacyConfigFile(job) >> getLegacyTestFile()
     }
 
     void cleanup() {
         getTestFile().delete()
-    }
-
-    def 'should serialize steps to file'() {
-        given:
-        def relevantSteps = [new RelevantStep(~/.*any.*/, 'label value', false)]
-
-        when:
-        new ConfigIO(job).write(relevantSteps)
-
-        then:
-        getTestFile().text == '[{"key":".*any.*","label":"label value","onlyFirstMatch":false}]'
+        getLegacyTestFile().delete()
     }
 
     def 'should read steps from file'() {
         given:
-        getTestFile().write('[{"key":".*Started.*","label":"Job Started","onlyFirstMatch":true}]')
+        getTestFile().write('{"relevantSteps":[{"label":"Job Started","key":".*Started.*","onlyFirstMatch":true}]}')
 
         when:
-        List<RelevantStep> relevantSteps = new ConfigIO(job).readOrDefault()
+        List<RelevantStep> relevantSteps = new ConfigIO(job).readOrDefault().relevantSteps
 
         then:
         relevantSteps.toListString() == [new RelevantStep(~/.*Started.*/, 'Job Started', true)].toListString()
@@ -43,110 +34,121 @@ class ConfigIOTest extends Specification {
 
     def 'should handle missing flag when reading steps from file'() {
         given:
-        getTestFile().write('[{"key":".*Started.*","label":"Job Started"}]')
+        getTestFile().write('{"relevantSteps":[{"key":".*Started.*","label":"Job Started"}]}')
 
         when:
-        List<RelevantStep> relevantSteps = new ConfigIO(job).readOrDefault()
+        List<RelevantStep> relevantSteps = new ConfigIO(job).readOrDefault().relevantSteps
 
         then:
         relevantSteps.toListString() == [new RelevantStep(~/.*Started.*/, 'Job Started', false)].toListString()
     }
 
-    def 'should read steps from List of Json Objects with default value for onlyFirstMatch'() {
+    def 'should read steps from legacy file one time if present'() {
         given:
-        def input = [
-                JSONObject.fromObject('{"key":".*Started NPM.*","label":"NPM Started"}'),
-                JSONObject.fromObject('{"key":".*Started Bower.*","label":"Bower Started"}'),
-        ]
+        def legacyFileContent = '[{"key":".*Started.*","label":"Job Started","onlyFirstMatch":true}]'
+        def expectedRelevantSteps = [new RelevantStep(~/.*Started.*/, 'Job Started', true)].toListString()
+        getLegacyTestFile().write(legacyFileContent)
 
         when:
-        List<RelevantStep> relevantSteps = ConfigIO.readValue(input)
+        List<RelevantStep> legacyRelevantSteps = new ConfigIO(job).readOrDefault().relevantSteps
 
         then:
-        relevantSteps.toListString() == [
-                new RelevantStep(~/.*Started NPM.*/, 'NPM Started', false),
-                new RelevantStep(~/.*Started Bower.*/, 'Bower Started', false),
-        ].toListString()
+        legacyRelevantSteps.toListString() == expectedRelevantSteps
+        !getLegacyTestFile().exists()
+        getTestFile().exists()
+
+        when:
+        List<RelevantStep> copiedRelevantSteps = new ConfigIO(job).readOrDefault().relevantSteps
+
+        then:
+        copiedRelevantSteps.toListString() == expectedRelevantSteps
     }
 
-    def 'should read steps from List of Json Objects with string value for onlyFirstMatch'() {
+    def 'should handle missing flag when reading steps from legacy file one time if present'() {
         given:
-        def input = [
-                JSONObject.fromObject('{"key":".*Started NPM.*","label":"NPM Started","onlyFirstMatch":"true"}'),
-                JSONObject.fromObject('{"key":".*Started Bower.*","label":"Bower Started","onlyFirstMatch":"false"}'),
-        ]
+        def fileContent = '[{"key":".*Started.*","label":"Job Started"}]'
+        def expectedRelevantSteps = [new RelevantStep(~/.*Started.*/, 'Job Started', false)].toListString()
+
+        getLegacyTestFile().write(fileContent)
 
         when:
-        List<RelevantStep> relevantSteps = ConfigIO.readValue(input)
+        List<RelevantStep> legacyRelevantSteps = new ConfigIO(job).readOrDefault().relevantSteps
 
         then:
-        relevantSteps.toListString() == [
-                new RelevantStep(~/.*Started NPM.*/, 'NPM Started', true),
-                new RelevantStep(~/.*Started Bower.*/, 'Bower Started', false),
-        ].toListString()
-    }
-
-    def 'should read steps from List of Json Objects with boolean value for onlyFirstMatch'() {
-        given:
-        def input = [
-                JSONObject.fromObject('{"key":".*Started NPM.*","label":"NPM Started","onlyFirstMatch":false}'),
-                JSONObject.fromObject('{"key":".*Started Bower.*","label":"Bower Started","onlyFirstMatch":true}'),
-        ]
+        legacyRelevantSteps.toListString() == expectedRelevantSteps
+        !getLegacyTestFile().exists()
+        getTestFile().exists()
 
         when:
-        List<RelevantStep> relevantSteps = ConfigIO.readValue(input)
+        List<RelevantStep> copiedRelevantSteps = new ConfigIO(job).readOrDefault().relevantSteps
 
         then:
-        relevantSteps.toListString() == [
-                new RelevantStep(~/.*Started NPM.*/, 'NPM Started', false),
-                new RelevantStep(~/.*Started Bower.*/, 'Bower Started', true),
-        ].toListString()
-    }
-
-    def 'should use same format for read and write'() {
-        given:
-        def expected = [new RelevantStep(~/.*Finished NPM.*/, 'NPM Finished', false)]
-
-        when:
-        new ConfigIO(job).write(expected.clone() as List<RelevantStep>)
-        def relevantSteps = new ConfigIO(job).readOrDefault()
-
-        then:
-        relevantSteps.toListString() == expected.toListString()
+        copiedRelevantSteps.toListString() == expectedRelevantSteps
     }
 
     def 'should return default value if no file content'() {
         given:
-        def defaultValue = [new RelevantStep(~/.*/, 'ignored', false)]
+        def defaultSteps = [new RelevantStep(~/.*/, 'ignored', false)]
 
         when:
-        def relevantSteps = new ConfigIO(job).readOrDefault(defaultValue.clone() as List<RelevantStep>)
+        def config = new ConfigIO(job).readOrDefault(defaultSteps.clone() as List<RelevantStep>)
 
         then:
-        relevantSteps == defaultValue
+        config.relevantSteps == defaultSteps
+        config.maxBuilds == null
     }
 
     def 'should return default value if invalid file content'() {
         given:
-        def defaultValue = [new RelevantStep(~/.*/, 'ignored', false)]
+        def defaultSteps = [new RelevantStep(~/.*/, 'ignored', false)]
         getTestFile().write('not json')
 
         when:
-        def relevantSteps = new ConfigIO(job).readOrDefault(defaultValue.clone() as List<RelevantStep>)
+        def config = new ConfigIO(job).readOrDefault(defaultSteps.clone() as List<RelevantStep>)
 
         then:
-        relevantSteps == defaultValue
+        config.relevantSteps == defaultSteps
+        config.maxBuilds == null
     }
 
     def 'should return empty value if no file content and no default'() {
         when:
-        def relevantSteps = new ConfigIO(job).readOrDefault()
+        def config = new ConfigIO(job).readOrDefault()
 
         then:
-        relevantSteps == []
+        config.relevantSteps == []
+        config.maxBuilds == null
+    }
+
+    def 'should support parsing and reading the written config file'() {
+        given:
+        def config = new ReportConfiguration(maxBuilds: 8787, relevantSteps: [new RelevantStep(~/.*Finished NPM.*/, 'NPM Finished', false)])
+
+        when:
+        new ConfigIO(job).write(config)
+
+        then:
+        !getTestFile().text.empty
+
+        when:
+        def configString = getTestFile().text
+        def parsedConfig = new ConfigIO(job).parse(configString)
+
+        then:
+        parsedConfig.toString() == config.toString()
+
+        when:
+        def readConfig = new ConfigIO(job).readOrDefault()
+
+        then:
+        readConfig.toString() == config.toString()
     }
 
     private static File getTestFile() {
-        new File('tempconfig.txt')
+        new File('temp-config.json')
+    }
+
+    private static File getLegacyTestFile() {
+        new File('temp-legacy-config.json')
     }
 }

@@ -1,43 +1,56 @@
 //  Copyright (c) 2016 Deere & Company
 package org.jenkins.ci.plugins.buildtimeblame.io
 
+import com.fasterxml.jackson.databind.DeserializationFeature
+import com.fasterxml.jackson.databind.ObjectMapper
 import hudson.model.Job
-import net.sf.json.JSONArray
-import net.sf.json.JSONObject
 import org.jenkins.ci.plugins.buildtimeblame.analysis.RelevantStep
 
-import static BlameFilePaths.getConfigFile
+import static org.jenkins.ci.plugins.buildtimeblame.io.BlameFilePaths.getConfigFile
+import static org.jenkins.ci.plugins.buildtimeblame.io.BlameFilePaths.getLegacyConfigFile
+
 
 class ConfigIO {
     Job job
+    private static ObjectMapper objectMapper = new ObjectMapper()
+            .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
 
     ConfigIO(Job job) {
         this.job = job
     }
 
-    public void write(List<RelevantStep> relevantSteps) {
-        getConfigFile(job).write(convertToString(relevantSteps))
+    public ReportConfiguration parse(String configString) {
+        objectMapper.readValue(configString, ReportConfiguration)
     }
 
-    public List<RelevantStep> readOrDefault(List<RelevantStep> defaultValue = []) {
-        def file = getConfigFile(job)
+    public write(ReportConfiguration reportConfig) {
+        getConfigFile(job).write(objectMapper.writeValueAsString(reportConfig))
+    }
 
+    public ReportConfiguration readOrDefault(List<RelevantStep> defaultSteps = []) {
         try {
-            readValue(JSONArray.fromObject(file.text).collect() as List<JSONObject>)
+            ReportConfiguration configuration = getConfiguration()
+            return configuration
         } catch (Exception ignored) {
-            return defaultValue
+            return new ReportConfiguration(relevantSteps: defaultSteps)
         }
     }
 
-    public static List<RelevantStep> readValue(List<JSONObject> objects) {
-        objects.collect { Map<String, String> step ->
-            new RelevantStep(~step.key, step.label, Boolean.valueOf(step.onlyFirstMatch))
+    private ReportConfiguration getConfiguration() {
+        def legacyFile = getLegacyConfigFile(job)
+
+        if (legacyFile.exists()) {
+            def relevantSteps = objectMapper.readValue(legacyFile.text, RelevantStep[].class)
+            def configuration = new ReportConfiguration(relevantSteps: relevantSteps)
+            moveConfigToNewFile(configuration, legacyFile)
+            return configuration
         }
+
+        return parse(getConfigFile(job).text)
     }
 
-    private static String convertToString(List<RelevantStep> relevantSteps) {
-        JSONArray.fromObject(relevantSteps.collect { RelevantStep entry ->
-            [key: entry.pattern.pattern(), label: entry.label, onlyFirstMatch: entry.onlyFirstMatch]
-        }).toString()
+    private void moveConfigToNewFile(ReportConfiguration configuration, File legacyFile) {
+        getConfigFile(job).write(objectMapper.writeValueAsString(configuration))
+        legacyFile.delete()
     }
 }
