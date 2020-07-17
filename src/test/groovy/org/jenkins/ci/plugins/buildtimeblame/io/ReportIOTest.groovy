@@ -1,8 +1,8 @@
 //  Copyright (c) 2016 Deere & Company
 package org.jenkins.ci.plugins.buildtimeblame.io
 
-import org.jenkins.ci.plugins.buildtimeblame.analysis.ConsoleLogMatch
 import hudson.model.Run
+import org.jenkins.ci.plugins.buildtimeblame.analysis.ConsoleLogMatch
 import spock.lang.Specification
 
 class ReportIOTest extends Specification {
@@ -21,35 +21,35 @@ class ReportIOTest extends Specification {
     def 'should serialize list to file without derived fields'() {
         given:
         def report = [
-                new ConsoleLogMatch(label: 'Finished', matchedLine: 'Did it', previousElapsedTime: 50, elapsedMillis: 1),
+                new ConsoleLogMatch(label: 'Finished', matchedLine: 'Did it', elapsedMillisOfNextMatch: 50, elapsedMillis: 1),
         ]
 
         when:
         new ReportIO(build).write(report)
 
         then:
-        getTestFile().text == '[{"matchedLine":"Did it","previousElapsedTime":50,"label":"Finished","elapsedMillis":1}]'
+        getTestFile().text == '[{"label":"Finished","matchedLine":"Did it","elapsedMillis":1,"elapsedMillisOfNextMatch":50}]'
     }
 
     def 'should load list from file'() {
         given:
-        getTestFile().write('[{"label":"Finished","matchedLine":"Did it","previousElapsedTime":50,"elapsedMillis":1}]')
+        getTestFile().write('[{"label":"Finished","matchedLine":"Did it","elapsedMillisOfNextMatch":50,"elapsedMillis":1}]')
 
         when:
         def report = new ReportIO(build).readFile().get()
 
         then:
         report == [
-                new ConsoleLogMatch(label: 'Finished', matchedLine: 'Did it', previousElapsedTime: 50, elapsedMillis: 1),
+                new ConsoleLogMatch(label: 'Finished', matchedLine: 'Did it', elapsedMillisOfNextMatch: 50, elapsedMillis: 1),
         ]
     }
 
     def 'should use same format for read and write'() {
         given:
         def expected = [
-                new ConsoleLogMatch(label: 'Begin', matchedLine: 'Did it', previousElapsedTime: 50, elapsedMillis: 1),
-                new ConsoleLogMatch(label: 'Started', matchedLine: 'Did nothing', previousElapsedTime: 30, elapsedMillis: 3),
-                new ConsoleLogMatch(label: 'Finished', matchedLine: 'Did all', previousElapsedTime: 21, elapsedMillis: 5),
+                new ConsoleLogMatch(label: 'Begin', matchedLine: 'Did it', elapsedMillisOfNextMatch: 50, elapsedMillis: 1),
+                new ConsoleLogMatch(label: 'Started', matchedLine: 'Did nothing', elapsedMillisOfNextMatch: 30, elapsedMillis: 3),
+                new ConsoleLogMatch(label: 'Finished', matchedLine: 'Did all', elapsedMillisOfNextMatch: 21, elapsedMillis: 5),
         ]
 
         when:

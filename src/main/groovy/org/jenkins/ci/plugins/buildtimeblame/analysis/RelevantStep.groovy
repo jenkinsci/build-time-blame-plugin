@@ -12,7 +12,7 @@ import java.util.regex.Pattern
 @EqualsAndHashCode
 @ToString
 class RelevantStep {
-    @JsonFormat(shape= JsonFormat.Shape.OBJECT)
+    @JsonFormat(shape = JsonFormat.Shape.OBJECT)
     @JsonProperty("key")
     Pattern pattern
     String label

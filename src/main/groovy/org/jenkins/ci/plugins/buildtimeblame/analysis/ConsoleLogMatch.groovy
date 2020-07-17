@@ -6,6 +6,8 @@ import groovy.transform.EqualsAndHashCode
 import groovy.transform.ToString
 import org.apache.commons.lang.time.DurationFormatUtils
 
+import java.beans.Transient
+
 @AutoClone
 @EqualsAndHashCode
 @ToString(includeNames = true)
@@ -15,18 +17,21 @@ class ConsoleLogMatch {
     String label
     String matchedLine
     long elapsedMillis
-    long previousElapsedTime
+    long elapsedMillisOfNextMatch
 
+    @Transient
     String getElapsedTime() {
         format(elapsedMillis)
     }
 
+    @Transient
     String getTimeTaken() {
         format(getUnFormattedTimeTaken())
     }
 
+    @Transient
     long getUnFormattedTimeTaken() {
-        elapsedMillis - previousElapsedTime
+        elapsedMillisOfNextMatch - elapsedMillis
     }
 
     String getMatchedLine() {

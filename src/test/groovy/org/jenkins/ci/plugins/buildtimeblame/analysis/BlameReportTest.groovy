@@ -4,7 +4,6 @@ package org.jenkins.ci.plugins.buildtimeblame.analysis
 import groovy.transform.EqualsAndHashCode
 import groovy.transform.ToString
 import hudson.model.Run
-import hudson.plugins.timestamper.Timestamp
 import hudson.util.Graph
 import hudson.util.ReflectionUtils
 import org.jfree.data.category.CategoryDataset
@@ -45,24 +44,24 @@ class BlameReportTest extends Specification {
         given:
         def buildResults = [
                 new BuildResult(consoleLogMatches: [
-                        new ConsoleLogMatch(label: 'Start', elapsedMillis: 0),
-                        new ConsoleLogMatch(label: 'Middle', elapsedMillis: 1000),
-                        new ConsoleLogMatch(label: 'Finish', elapsedMillis: 25000),
+                        new ConsoleLogMatch(label: 'Start', elapsedMillis: 0, elapsedMillisOfNextMatch: 1000),
+                        new ConsoleLogMatch(label: 'Middle', elapsedMillis: 1000, elapsedMillisOfNextMatch: 25000),
+                        new ConsoleLogMatch(label: 'Finish', elapsedMillis: 25000, elapsedMillisOfNextMatch: 26000),
                 ]),
                 new BuildResult(consoleLogMatches: [
-                        new ConsoleLogMatch(label: 'Start', elapsedMillis: 500),
-                        new ConsoleLogMatch(label: 'Middle', elapsedMillis: 2000),
-                        new ConsoleLogMatch(label: 'Finish', elapsedMillis: 3000),
+                        new ConsoleLogMatch(label: 'Start', elapsedMillis: 500, elapsedMillisOfNextMatch: 2000),
+                        new ConsoleLogMatch(label: 'Middle', elapsedMillis: 2000, elapsedMillisOfNextMatch: 3000),
+                        new ConsoleLogMatch(label: 'Finish', elapsedMillis: 3000, elapsedMillisOfNextMatch: 5000)
                 ]),
                 new BuildResult(consoleLogMatches: [
-                        new ConsoleLogMatch(label: 'Start', elapsedMillis: 100),
-                        new ConsoleLogMatch(label: 'Middle', elapsedMillis: 3000),
-                        new ConsoleLogMatch(label: 'Finish', elapsedMillis: 4000),
+                        new ConsoleLogMatch(label: 'Start', elapsedMillis: 100, elapsedMillisOfNextMatch: 3000),
+                        new ConsoleLogMatch(label: 'Middle', elapsedMillis: 3000, elapsedMillisOfNextMatch: 4000),
+                        new ConsoleLogMatch(label: 'Finish', elapsedMillis: 4000, elapsedMillisOfNextMatch: 10000),
                 ]),
                 new BuildResult(consoleLogMatches: [
-                        new ConsoleLogMatch(label: 'Start', elapsedMillis: 0),
-                        new ConsoleLogMatch(label: 'Middle', elapsedMillis: 3000),
-                        new ConsoleLogMatch(label: 'Finish', elapsedMillis: 5000),
+                        new ConsoleLogMatch(label: 'Start', elapsedMillis: 0, elapsedMillisOfNextMatch: 3000),
+                        new ConsoleLogMatch(label: 'Middle', elapsedMillis: 3000, elapsedMillisOfNextMatch: 5000),
+                        new ConsoleLogMatch(label: 'Finish', elapsedMillis: 5000, elapsedMillisOfNextMatch: 7000),
                 ]),
         ]
 
@@ -71,9 +70,9 @@ class BlameReportTest extends Specification {
 
         then:
         medianBuildResult.size() == 3
-        medianBuildResult[0] == buildExpectedMedianResult('Start', 150, 0)
-        medianBuildResult[1] == buildExpectedMedianResult('Middle', 2250, 150)
-        medianBuildResult[2] == buildExpectedMedianResult('Finish', 9250, 2250)
+        medianBuildResult[0] == buildExpectedMedianResult('Start', 150, 2250)
+        medianBuildResult[1] == buildExpectedMedianResult('Middle', 2250, 9250)
+        medianBuildResult[2] == buildExpectedMedianResult('Finish', 9250, 12000)
     }
 
     def 'should cache mean build result'() {
@@ -102,14 +101,14 @@ class BlameReportTest extends Specification {
 
         def buildResults = [
                 new BuildResult(consoleLogMatches: [
-                        new ConsoleLogMatch(label: 'Start', elapsedMillis: 0),
-                        new ConsoleLogMatch(label: 'Middle', elapsedMillis: 1000),
-                        new ConsoleLogMatch(label: 'Finish', elapsedMillis: 25000, previousElapsedTime: 1000),
+                        new ConsoleLogMatch(label: 'Start', elapsedMillis: 0, elapsedMillisOfNextMatch: 1000),
+                        new ConsoleLogMatch(label: 'Middle', elapsedMillis: 1000, elapsedMillisOfNextMatch: 25000),
+                        new ConsoleLogMatch(label: 'Finish', elapsedMillis: 25000, elapsedMillisOfNextMatch: 26000),
                 ], build: latestBuild),
                 new BuildResult(consoleLogMatches: [
-                        new ConsoleLogMatch(label: 'Start', elapsedMillis: 500),
-                        new ConsoleLogMatch(label: 'Middle', elapsedMillis: 2000, previousElapsedTime: 500),
-                        new ConsoleLogMatch(label: 'Finish', elapsedMillis: 3000, previousElapsedTime: 2000),
+                        new ConsoleLogMatch(label: 'Start', elapsedMillis: 500, elapsedMillisOfNextMatch: 2000),
+                        new ConsoleLogMatch(label: 'Middle', elapsedMillis: 2000, elapsedMillisOfNextMatch: 3000),
+                        new ConsoleLogMatch(label: 'Finish', elapsedMillis: 3000, elapsedMillisOfNextMatch: 5000)
                 ], build: previousBuild),
         ]
 
@@ -158,12 +157,12 @@ class BlameReportTest extends Specification {
     CategoryDataset getExpectedDataSet() {
         def dataSet = new DefaultCategoryDataset()
 
-        dataSet.addValue((double) 0.5, 'Start', 53)
-        dataSet.addValue((double) 1.5, 'Middle', 53)
-        dataSet.addValue((double) 1.0, 'Finish', 53)
-        dataSet.addValue((double) 0.0, 'Start', 98)
-        dataSet.addValue((double) 1.0, 'Middle', 98)
-        dataSet.addValue((double) 24.0, 'Finish', 98)
+        dataSet.addValue((double) 1.5, 'Start', 53)
+        dataSet.addValue((double) 1.0, 'Middle', 53)
+        dataSet.addValue((double) 2.0, 'Finish', 53)
+        dataSet.addValue((double) 1.0, 'Start', 98)
+        dataSet.addValue((double) 24.0, 'Middle', 98)
+        dataSet.addValue((double) 1.0, 'Finish', 98)
 
         return dataSet
     }
@@ -174,7 +173,7 @@ class BlameReportTest extends Specification {
         return ReflectionUtils.getField(field, instance)
     }
 
-    ConsoleLogMatch buildExpectedMedianResult(String label, int elapsedTime, int previousTime) {
-        new ConsoleLogMatch(label: label, elapsedMillis: elapsedTime, matchedLine: 'N/A', previousElapsedTime: previousTime)
+    ConsoleLogMatch buildExpectedMedianResult(String label, int elapsedTime, int nextTime) {
+        new ConsoleLogMatch(label: label, elapsedMillis: elapsedTime, matchedLine: 'N/A', elapsedMillisOfNextMatch: nextTime)
     }
 }

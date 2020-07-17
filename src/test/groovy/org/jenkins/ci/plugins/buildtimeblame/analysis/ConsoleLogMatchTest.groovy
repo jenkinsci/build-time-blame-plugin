@@ -4,7 +4,6 @@ package org.jenkins.ci.plugins.buildtimeblame.analysis
 import groovy.transform.AutoClone
 import groovy.transform.EqualsAndHashCode
 import groovy.transform.ToString
-import hudson.plugins.timestamper.Timestamp
 import spock.lang.Specification
 
 class ConsoleLogMatchTest extends Specification {
@@ -25,7 +24,7 @@ class ConsoleLogMatchTest extends Specification {
 
     def 'should return formatted time taken'() {
         given:
-        def logResult = new ConsoleLogMatch(elapsedMillis: 500015, previousElapsedTime: 50)
+        def logResult = new ConsoleLogMatch(elapsedMillis: 50, elapsedMillisOfNextMatch: 500015)
 
         expect:
         logResult.getTimeTaken() == '08:19.965'
@@ -33,7 +32,7 @@ class ConsoleLogMatchTest extends Specification {
 
     def 'should return un-formatted time taken'() {
         given:
-        def logResult = new ConsoleLogMatch(elapsedMillis: 465, previousElapsedTime: 15)
+        def logResult = new ConsoleLogMatch(elapsedMillis: 15, elapsedMillisOfNextMatch: 465)
 
         expect:
         logResult.getUnFormattedTimeTaken() == 450

@@ -5,7 +5,7 @@ import groovy.transform.ToString
 import org.jenkins.ci.plugins.buildtimeblame.analysis.RelevantStep
 
 @ToString
-@EqualsAndHashCode(includeFields=true)
+@EqualsAndHashCode
 class ReportConfiguration {
     Integer maxBuilds
     List<RelevantStep> relevantSteps
