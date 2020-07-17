@@ -43,7 +43,8 @@ A Jenkins plugin for analyzing the historical console output of a Job with the g
 
 1. Add/Update regex statements to match parts of the build process.
     + Regex Search Key: Lines in the console output that match this regex string will be added to the report.
-    These keys should match when the particular step is complete.
+    These keys should match when the particular step has begun.
+    Make sure to add another match for when that step is complete or the next begins to get the correct elapsed time in the report.
     + Label: The matches will be shown with this label in the report.
     + Only Use First Match: If this box is checked, the search key will not be checked against after the first line it matches.
 1. (Optional) Set a limit on the "Maximum Builds To Process"
