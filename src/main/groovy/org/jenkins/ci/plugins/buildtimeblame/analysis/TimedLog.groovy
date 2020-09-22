@@ -1,6 +1,7 @@
 package org.jenkins.ci.plugins.buildtimeblame.analysis
 
 import groovy.transform.EqualsAndHashCode
+import org.apache.commons.lang3.StringUtils
 
 import java.util.stream.Collectors
 
@@ -16,11 +17,16 @@ class TimedLog {
             )
         } else {
             def split = timestamperLog.split(' ')
-
-            return new TimedLog(
+            if (StringUtils.isNumeric(split[0])) {
+                return new TimedLog(
                     elapsedMillis: Optional.of(Long.valueOf(split[0])),
                     log: Arrays.stream(split).skip(1).collect(Collectors.joining(' ')),
-            )
+                )
+            } else {
+                return new TimedLog(
+                        log: timestamperLog.trim()
+                )
+            }
         }
     }
 
