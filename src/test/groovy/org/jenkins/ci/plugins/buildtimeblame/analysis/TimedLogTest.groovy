@@ -30,6 +30,19 @@ class TimedLogTest extends Specification {
         !result.elapsedMillis.isPresent()
     }
 
+    def 'should not fail upon unexpected log format'() {
+        given:
+        def log = 'some text for what happened'
+        def text = "$log"
+
+        when:
+        def result = TimedLog.fromText(text)
+
+        then:
+        result.log == log
+        !result.elapsedMillis.isPresent()
+    }
+
     def 'should convert to a log line and back again when there is a timestamp'() {
         given:
         def log = 'some text for what happened'
