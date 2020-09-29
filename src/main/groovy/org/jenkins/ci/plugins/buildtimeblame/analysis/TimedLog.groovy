@@ -20,7 +20,7 @@ class TimedLog {
             if (StringUtils.isNumeric(split[0])) {
                 return new TimedLog(
                     elapsedMillis: Optional.of(Long.valueOf(split[0])),
-                    log: Arrays.stream(split).skip(1).collect(Collectors.joining(' ')),
+                    log: Arrays.stream(split).skip(1).collect(Collectors.joining(' ')).trim(),
                 )
             } else {
                 return new TimedLog(
