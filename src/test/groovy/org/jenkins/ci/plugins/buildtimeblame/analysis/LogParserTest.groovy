@@ -197,31 +197,6 @@ class LogParserTest extends Specification {
         results.build == build
     }
 
-    def 'should trim extra spaces in the log statement when considering matches'() {
-        given:
-        def build = Mock(Run)
-        def log = "8    Started by user unknown or anonymous  \n" +
-                "9  Running as SYSTEM\n" +
-                "117    Finished: SUCCESS  "
-        setupMockTimestamperLog(build, Arrays.stream(log.split('\n')).map({ line -> TimedLog.fromText(line) }).collect(Collectors.toList()))
-        def timestamps = [8, 117]
-
-        def logParser = new LogParser([
-                new RelevantStep(~".*Started by.*", 'Job Started on Executor', true),
-                new RelevantStep(~"^Finished: (SUCCESS|UNSTABLE|FAILURE|NOT_BUILT|ABORTED)\$.*", 'Finished', true),
-        ])
-
-        when:
-        BuildResult buildResult = logParser.getBuildResult(build)
-
-        then:
-        buildResult.build == build
-        buildResult.consoleLogMatches == [
-                buildLogResult('Job Started on Executor', 'Started by user unknown or anonymous', timestamps, 0, 1),
-                buildLogResult('Finished', 'Finished: SUCCESS', timestamps, 1, -1),
-        ]
-    }
-
     private void setupMockTimestamperLog(Run build, List<TimedLog> lines) {
         def mockReader = Mock(BufferedReader)
         1 * timestamperAPI.read(build, 'appendLog&elapsed=S') >> mockReader
