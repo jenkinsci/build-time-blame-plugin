@@ -42,7 +42,9 @@ A Jenkins plugin for analyzing the historical console output of a Job with the g
     ![Timestamper Plugin](documentation/images/starting_configuration.png)
 
 1. Add/Update regex statements to match parts of the build process.
-    + Regex Search Key: Lines in the console output that match this regex string will be added to the report.
+    + Regex Search Key:
+    Lines in the console output that match this regex string will be added to the report.
+    Any leading or trailing spaces will be excluded before checking if the rest of the line matches the regex.
     These keys should match when the particular step has begun.
     Make sure to add another match for when that step is complete or the next begins to get the correct elapsed time in the report.
     + Label: The matches will be shown with this label in the report.

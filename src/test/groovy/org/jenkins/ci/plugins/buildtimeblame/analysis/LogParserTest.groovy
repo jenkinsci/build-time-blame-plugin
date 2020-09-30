@@ -44,7 +44,7 @@ class LogParserTest extends Specification {
         then:
         buildResult.build == build
         buildResult.consoleLogMatches == expected
-//        1 * reportIO.write(expected)
+        1 * reportIO.write(expected)
     }
 
     def 'should keep single match steps from one build to the next'() {
