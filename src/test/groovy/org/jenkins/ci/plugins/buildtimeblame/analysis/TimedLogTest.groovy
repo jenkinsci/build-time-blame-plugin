@@ -3,11 +3,11 @@ package org.jenkins.ci.plugins.buildtimeblame.analysis
 import spock.lang.Specification
 
 class TimedLogTest extends Specification {
-    def 'should convert from the expected log format from the timestamper plugin when there is a timestamp'() {
+    def 'should extract the trimmed text and timestamp when available'() {
         given:
-        def log = 'some text for what happened'
+        def log = 'Step 1 is done'
         def elapsedMillis = 83993
-        def text = "$elapsedMillis $log"
+        def text = "$elapsedMillis         $log          "
 
         when:
         def result = TimedLog.fromText(text)
@@ -17,10 +17,10 @@ class TimedLogTest extends Specification {
         result.elapsedMillis.get() == elapsedMillis
     }
 
-    def 'should convert from the expected log format from the timestamper plugin when there is no timestamp'() {
+    def 'should extract the trimmed text when a timestamp is not available'() {
         given:
-        def log = 'some text for what happened'
-        def text = "  $log"
+        def log = 'Step 2 is done'
+        def text = "      $log    "
 
         when:
         def result = TimedLog.fromText(text)
@@ -30,9 +30,9 @@ class TimedLogTest extends Specification {
         !result.elapsedMillis.isPresent()
     }
 
-    def 'should not fail upon unexpected log format'() {
+    def 'should use the full log statement if there are no extra spaces'() {
         given:
-        def log = 'some text for what happened'
+        def log = 'Step 3 is done'
         def text = "$log"
 
         when:
@@ -59,7 +59,7 @@ class TimedLogTest extends Specification {
 
     def 'should convert to a log line and back again when there is no timestamp'() {
         given:
-        def log = 'some text for what happened'
+        def log = 'some text for what else happened'
 
         when:
         def text = new TimedLog(log: log, elapsedMillis: Optional.empty() as Optional<Long>).toText()

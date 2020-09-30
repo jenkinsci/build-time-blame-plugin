@@ -13,21 +13,25 @@ class TimedLog {
     public static TimedLog fromText(String timestamperLog) {
         if (timestamperLog.startsWith(' ')) {
             return new TimedLog(
-                    log: timestamperLog.trim()
+                    log: timestamperLog
             )
         } else {
             def split = timestamperLog.split(' ')
             if (StringUtils.isNumeric(split[0])) {
                 return new TimedLog(
-                    elapsedMillis: Optional.of(Long.valueOf(split[0])),
-                    log: Arrays.stream(split).skip(1).collect(Collectors.joining(' ')).trim(),
+                        elapsedMillis: Optional.of(Long.valueOf(split[0])),
+                        log: Arrays.stream(split).skip(1).collect(Collectors.joining(' ')),
                 )
             } else {
                 return new TimedLog(
-                        log: timestamperLog.trim()
+                        log: timestamperLog
                 )
             }
         }
+    }
+
+    String setLog(String log) {
+        this.log = log.trim()
     }
 
     String toText() {
