@@ -8,6 +8,7 @@ import groovy.transform.ToString
 import hudson.util.Graph
 import org.jfree.chart.ChartFactory
 import org.jfree.chart.JFreeChart
+import org.jfree.chart.axis.CategoryLabelPositions
 import org.jfree.chart.plot.PlotOrientation
 import org.jfree.data.category.CategoryDataset
 import org.jfree.data.category.DefaultCategoryDataset
@@ -53,7 +54,10 @@ class BlameReport {
                     '', 'Build #', 'Time Taken (s)', getDataSet(),
                     PlotOrientation.VERTICAL, true, false, false
             ).each {
-                it.getCategoryPlot().getDomainAxis().setCategoryMargin(0)
+                def xAxis = it.getCategoryPlot().getDomainAxis()
+
+                xAxis.setCategoryMargin(0)
+                xAxis.setCategoryLabelPositions(CategoryLabelPositions.UP_45);
             }
         }
     }
