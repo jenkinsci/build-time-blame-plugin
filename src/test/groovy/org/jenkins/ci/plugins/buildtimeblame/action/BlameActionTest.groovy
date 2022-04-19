@@ -34,7 +34,7 @@ class BlameActionTest extends Specification {
         Action blameAction = new BlameAction(null);
 
         then:
-        blameAction.getIconFileName() == 'monitor.png'
+        blameAction.getIconClassName() == 'icon-monitor'
         blameAction.getDisplayName() == 'Build Time Blame Report'
         blameAction.getUrlName() == 'buildTimeBlameReport'
     }

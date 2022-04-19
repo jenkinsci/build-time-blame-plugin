@@ -44,12 +44,16 @@ class BlameAction implements Action {
 
     @Override
     String getIconFileName() {
-        return 'monitor.png'
+        return 'null'
     }
 
     @Override
     String getDisplayName() {
         return 'Build Time Blame Report'
+    }
+
+    String getIconClassName() {
+        return 'icon-monitor'
     }
 
     @Override
