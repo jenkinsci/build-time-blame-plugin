@@ -89,7 +89,7 @@
         <dependency>
             <groupId>org.jenkins-ci.plugins</groupId>
             <artifactId>timestamper</artifactId>
-            <version>1.8.7</version>
+            <version>1.11.2</version>
             <scope>compile</scope>
         </dependency>
         <dependency>
