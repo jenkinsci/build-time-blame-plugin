@@ -19,7 +19,7 @@
     <properties>
         <jenkins.version>2.361.4</jenkins.version>
         <slf4j.version>1.7.26</slf4j.version>
-        <jackson-core.version>2.9.9</jackson-core.version>
+        <jackson-core.version>[2.12.7.1,)</jackson-core.version>
         <revision>2.1.0</revision>
         <changelist>999999-SNAPSHOT</changelist>
         <hpi-plugin.version>3.43</hpi-plugin.version>
