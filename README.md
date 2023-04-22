@@ -3,7 +3,7 @@ A Jenkins plugin for analyzing the historical console output of a Job with the g
 
 
 ## Requirements:
- + Jenkins Version >= `2.164.1`
+ + Jenkins Version >= `2.361.4`
  + [Timestamper Plugin](https://wiki.jenkins-ci.org/display/JENKINS/Timestamper)
 
 ## What it does:
@@ -37,9 +37,7 @@ A Jenkins plugin for analyzing the historical console output of a Job with the g
 1. Enable Timestamps for any jobs you want to analyze (the report will only include results for builds where this plugin was enabled):
 
     ![Timestamper Plugin](documentation/images/timestamps.png)
-1. The report will be pre-populated with regex to denote the start and end of the job:
-
-    ![Timestamper Plugin](documentation/images/starting_configuration.png)
+1. The report will be pre-populated with regex to denote the start and end of the job.
 
 1. Add/Update regex statements to match parts of the build process.
     + Regex Search Key:
