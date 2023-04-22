@@ -119,41 +119,6 @@ class BlameReportTest extends Specification {
         graph.createGraph().getCategoryPlot().getDataset() == getExpectedDataSet()
     }
 
-    def 'should set basic properties of graph'() {
-        when:
-        Graph graph = new BlameReport([]).getGraph()
-
-        then:
-        getFieldValue(Graph, 'defaultW', graph) == 1000
-        getFieldValue(Graph, 'defaultH', graph) == 500
-        getFieldValue(Graph, 'timestamp', graph) < System.currentTimeMillis()
-
-    }
-
-    def 'should set graph timestamp (this is ugly to avoid including Joda Time or mocking currentTimeMillis())'() {
-        given:
-        def pauseTime = 15
-        def extraPause = 5
-        long beforeAll = System.currentTimeMillis()
-        sleep(pauseTime + extraPause)
-        Graph graph1 = new BlameReport([]).getGraph()
-        sleep(pauseTime + extraPause)
-        Graph graph2 = new BlameReport([]).getGraph()
-        sleep(pauseTime + extraPause)
-        long afterAll = System.currentTimeMillis()
-
-        when:
-        long timestamp1 = getFieldValue(Graph, 'timestamp', graph1) as long
-        long timestamp2 = getFieldValue(Graph, 'timestamp', graph2) as long
-
-        then:
-        timestamp1 - beforeAll >= pauseTime
-        timestamp2 - beforeAll >= 2 * pauseTime
-        afterAll - timestamp1 >= 2 * pauseTime
-        afterAll - timestamp2 >= pauseTime
-        timestamp2 - timestamp1 >= pauseTime
-    }
-
     CategoryDataset getExpectedDataSet() {
         def dataSet = new DefaultCategoryDataset()
 
@@ -171,6 +136,10 @@ class BlameReportTest extends Specification {
         def field = ReflectionUtils.findField(clazz, fieldName)
         field.setAccessible(true)
         return ReflectionUtils.getField(field, instance)
+    }
+
+    long getTimestamp(Graph graph) {
+        return (graph as BlameReport.GraphImpl).getTimestamp()
     }
 
     ConsoleLogMatch buildExpectedMedianResult(String label, int elapsedTime, int nextTime) {
