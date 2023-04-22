@@ -18,7 +18,6 @@
 
     <properties>
         <jenkins.version>2.361.4</jenkins.version>
-        <java.level>8</java.level>
         <slf4j.version>1.7.26</slf4j.version>
         <jackson-core.version>2.9.9</jackson-core.version>
         <revision>2.1.0</revision>
@@ -130,9 +129,6 @@
                 <groupId>org.codehaus.gmavenplus</groupId>
                 <artifactId>gmavenplus-plugin</artifactId>
                 <version>2.1.0</version>
-                <configuration>
-                    <targetBytecode>1.6</targetBytecode>
-                </configuration>
                 <executions>
                     <execution>
                         <goals>

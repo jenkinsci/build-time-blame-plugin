@@ -1,8 +1,13 @@
-# Note: additional setup is required, see https://www.jenkins.io/redirect/continuous-delivery-of-plugins
-
 name: cd
 on:
   workflow_dispatch:
+  check_run:
+    types:
+      - completed
+
+permissions:
+  checks: read
+  contents: write
 
 jobs:
   maven-cd:
@@ -10,4 +15,3 @@ jobs:
     secrets:
       MAVEN_USERNAME: ${{ secrets.MAVEN_USERNAME }}
       MAVEN_TOKEN: ${{ secrets.MAVEN_TOKEN }}
-
