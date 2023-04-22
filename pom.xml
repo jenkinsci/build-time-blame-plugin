@@ -22,6 +22,7 @@
         <jackson-core.version>2.9.9</jackson-core.version>
         <revision>2.1.0</revision>
         <changelist>999999-SNAPSHOT</changelist>
+        <hpi-plugin.version>3.43</hpi-plugin.version>
     </properties>
 
     <artifactId>build-time-blame</artifactId>
