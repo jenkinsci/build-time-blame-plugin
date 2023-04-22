@@ -25,7 +25,7 @@
     </properties>
 
     <artifactId>build-time-blame</artifactId>
-    <version>${revision}-${changelist}</version>
+    <version>${changelist}-${revision}</version>
     <packaging>hpi</packaging>
     <licenses>
         <license>
