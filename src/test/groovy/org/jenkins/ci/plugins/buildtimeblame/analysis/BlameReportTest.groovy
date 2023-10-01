@@ -119,6 +119,68 @@ class BlameReportTest extends Specification {
         graph.createGraph().getCategoryPlot().getDataset() == getExpectedDataSet()
     }
 
+    def 'should build graph with tooltip and URL generators'() {
+        given:
+        def report = new BlameReport([])
+        def graph = report.getGraph()
+
+        when:
+        def chart = graph.createGraph()
+
+        then:
+        verifyAll(chart.getCategoryPlot().getRenderer()) {
+            getToolTipGenerator(0, 0) != null
+            getItemURLGenerator(0, 0) != null
+        }
+    }
+
+    def 'should generate tooltips for graph areas'() {
+        given:
+        def buildNumber = 98
+        def buildResults = [
+                new BuildResult(consoleLogMatches: [
+                        new ConsoleLogMatch(label: 'Start', elapsedMillis: 0, elapsedMillisOfNextMatch: 1000),
+                        new ConsoleLogMatch(label: 'Middle', elapsedMillis: 1000, elapsedMillisOfNextMatch: 124000),
+                        new ConsoleLogMatch(label: 'Finish', elapsedMillis: 124000, elapsedMillisOfNextMatch: 260000),
+                ], build: Mock(Run) { _ * it.getNumber() >> buildNumber }),
+        ]
+        def report = new BlameReport(buildResults)
+        def dataSet = report.getDataSet()
+        def chart = report.getGraph().createGraph()
+        def toolTipGenerator = chart.getCategoryPlot().getRenderer().getToolTipGenerator(1, 0)
+
+        when:
+        def toolTip = toolTipGenerator.generateToolTip(dataSet, 1, 0)
+
+        then:
+        toolTip != null
+        toolTip.contains("${buildNumber}")
+        toolTip.contains('Middle')
+        toolTip.contains('123')
+    }
+
+    def 'should generate URLs for graph areas'() {
+        given:
+        def buildNumber = 98
+        def buildResults = [
+                new BuildResult(consoleLogMatches: [
+                        new ConsoleLogMatch(label: 'Start', elapsedMillis: 0, elapsedMillisOfNextMatch: 1000),
+                        new ConsoleLogMatch(label: 'Finish', elapsedMillis: 1000, elapsedMillisOfNextMatch: 1100),
+                ], build: Mock(Run) { _ * it.getNumber() >> buildNumber }),
+        ]
+        def report = new BlameReport(buildResults)
+        def dataSet = report.getDataSet()
+        def chart = report.getGraph().createGraph()
+        def urlGenerator = chart.getCategoryPlot().getRenderer().getItemURLGenerator(1, 0)
+
+        when:
+        def url = urlGenerator.generateURL(dataSet, 1, 0)
+
+        then:
+        url != null
+        url.contains("${buildNumber}")
+    }
+
     CategoryDataset getExpectedDataSet() {
         def dataSet = new DefaultCategoryDataset()
 

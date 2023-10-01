@@ -11,10 +11,6 @@
     width: auto;
 }
 
-.build-time-blame .trend-graph img {
-    max-width: 100%;
-}
-
 .build-time-blame .error-text {
     color: red;
 }
