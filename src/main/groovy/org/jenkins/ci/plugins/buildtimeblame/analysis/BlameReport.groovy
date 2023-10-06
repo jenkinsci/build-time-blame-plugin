@@ -6,10 +6,13 @@ import com.google.common.collect.Multimap
 import groovy.transform.EqualsAndHashCode
 import groovy.transform.ToString
 import hudson.util.Graph
+import org.apache.commons.lang.time.DurationFormatUtils
 import org.jfree.chart.ChartFactory
 import org.jfree.chart.JFreeChart
 import org.jfree.chart.axis.CategoryLabelPositions
+import org.jfree.chart.labels.CategoryToolTipGenerator
 import org.jfree.chart.plot.PlotOrientation
+import org.jfree.chart.urls.CategoryURLGenerator
 import org.jfree.data.category.CategoryDataset
 import org.jfree.data.category.DefaultCategoryDataset
 
@@ -45,7 +48,7 @@ class BlameReport {
 
     public class GraphImpl extends Graph {
         protected GraphImpl() {
-            super(System.currentTimeMillis(), 1000, 500)
+            super(System.currentTimeMillis(), 900, 500)
         }
 
         @Override
@@ -54,11 +57,41 @@ class BlameReport {
                     '', 'Build #', 'Time Taken (s)', getDataSet(),
                     PlotOrientation.VERTICAL, true, false, false
             ).each {
-                def xAxis = it.getCategoryPlot().getDomainAxis()
+                def plot = it.getCategoryPlot()
+                plot.setRenderer(new BlameStackedAreaRenderer())
 
+                def xAxis = plot.getDomainAxis()
                 xAxis.setCategoryMargin(0)
+                xAxis.setLowerMargin(0)
+                xAxis.setUpperMargin(0)
                 xAxis.setCategoryLabelPositions(CategoryLabelPositions.UP_45);
             }
+        }
+    }
+
+    private static class BlameStackedAreaRenderer extends MapFixStackedAreaRenderer
+            implements CategoryToolTipGenerator, CategoryURLGenerator {
+        BlameStackedAreaRenderer() {
+            setItemURLGenerator(this)
+            setToolTipGenerator(this)
+        }
+
+        @Override
+        public String generateToolTip(CategoryDataset dataset, int row, int column) {
+            String rowKey = dataset.getRowKey(row)
+            int columnKey = dataset.getColumnKey(column)
+            double elapsedSeconds = dataset.getValue(rowKey, columnKey)
+            long elapsedMillis = 1000.0 * elapsedSeconds
+            String duration = DurationFormatUtils.formatDuration(elapsedMillis, 'mm:ss.S')
+
+            return "#${columnKey} ${rowKey}\n${duration} (${(long)elapsedSeconds}s)"
+        }
+
+        @Override
+        public String generateURL(CategoryDataset dataset, int row, int column) {
+            int columnKey = dataset.getColumnKey(column)
+
+            return "../${columnKey}"
         }
     }
 
