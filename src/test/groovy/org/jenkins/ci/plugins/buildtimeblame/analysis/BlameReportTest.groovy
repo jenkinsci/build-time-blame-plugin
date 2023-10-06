@@ -156,7 +156,7 @@ class BlameReportTest extends Specification {
         toolTip != null
         toolTip.contains("${buildNumber}")
         toolTip.contains('Middle')
-        toolTip.contains('123')
+        toolTip.contains('123s')
     }
 
     def 'should generate URLs for graph areas'() {
