@@ -40,7 +40,7 @@
         A Jenkins plugin for analyzing the historical console output of a Job
         with the goal of determining which steps are taking the most time.
     </description>
-    <url>https://wiki.jenkins-ci.org/display/JENKINS/Build+Time+Blame+Plugin</url>
+    <url>https://github.com/jenkinsci/build-time-blame-plugin/</url>
 
     <repositories>
         <repository>
