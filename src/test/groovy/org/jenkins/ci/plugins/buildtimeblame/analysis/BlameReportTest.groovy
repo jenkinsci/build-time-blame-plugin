@@ -181,6 +181,29 @@ class BlameReportTest extends Specification {
         url.contains("${buildNumber}")
     }
 
+    def 'should handle missing steps in build result'() {
+        given:
+        def buildNumber = 66
+        def dataSet = new DefaultCategoryDataset()
+        dataSet.addValue((double) 1.0, 'Compile', buildNumber)
+        dataSet.addValue((double) 2.0, 'Compile', 31)
+        dataSet.addValue((double) 3.0, 'Test', 31)
+
+        def report = new BlameReport([])
+        def chart = report.getGraph().createGraph()
+        def toolTipGenerator = chart.getCategoryPlot().getRenderer().getToolTipGenerator(1, 0)
+        def urlGenerator = chart.getCategoryPlot().getRenderer().getItemURLGenerator(1, 0)
+
+        when:
+        def toolTip = toolTipGenerator.generateToolTip(dataSet, 1, 0)
+        def url = urlGenerator.generateURL(dataSet, 1, 0)
+
+        then:
+        toolTip != null
+        toolTip.contains('0s')
+        url != null
+    }
+
     CategoryDataset getExpectedDataSet() {
         def dataSet = new DefaultCategoryDataset()
 
