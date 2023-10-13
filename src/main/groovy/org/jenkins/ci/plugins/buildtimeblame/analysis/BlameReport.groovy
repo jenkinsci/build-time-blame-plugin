@@ -80,7 +80,8 @@ class BlameReport {
         public String generateToolTip(CategoryDataset dataset, int row, int column) {
             String rowKey = dataset.getRowKey(row)
             int columnKey = dataset.getColumnKey(column)
-            double elapsedSeconds = dataset.getValue(rowKey, columnKey)
+            def value = dataset.getValue(rowKey, columnKey) ?: 0.0
+            double elapsedSeconds = value
             long elapsedMillis = 1000.0 * elapsedSeconds
             String duration = DurationFormatUtils.formatDuration(elapsedMillis, 'mm:ss.S')
 
