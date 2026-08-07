@@ -6,7 +6,6 @@ import com.google.common.collect.Multimap
 import groovy.transform.EqualsAndHashCode
 import groovy.transform.ToString
 import hudson.util.Graph
-import org.apache.commons.lang.time.DurationFormatUtils
 import org.jfree.chart.ChartFactory
 import org.jfree.chart.JFreeChart
 import org.jfree.chart.axis.CategoryLabelPositions
@@ -83,7 +82,7 @@ class BlameReport {
             def value = dataset.getValue(rowKey, columnKey) ?: 0.0
             double elapsedSeconds = value
             long elapsedMillis = 1000.0 * elapsedSeconds
-            String duration = DurationFormatUtils.formatDuration(elapsedMillis, 'mm:ss.S')
+            String duration = formatElapsed(elapsedMillis)
 
             return "#${columnKey} ${rowKey}\n${duration} (${(long)elapsedSeconds}s)"
         }
@@ -142,4 +141,16 @@ class BlameReport {
         }
         return allBuildResults
     }
+    /**
+     * Formats a duration as mm:ss.SSS, matching what Commons Lang's
+     * DurationFormatUtils.formatDuration(millis, 'mm:ss.S') produced -- note the milliseconds are
+     * zero-padded to three digits, and the minutes accumulate rather than rolling over at 60.
+     */
+    private static String formatElapsed(long elapsedMillis) {
+        return String.format('%02d:%02d.%03d',
+                elapsedMillis.intdiv(60000),
+                elapsedMillis.intdiv(1000) % 60,
+                elapsedMillis % 1000)
+    }
+
 }
