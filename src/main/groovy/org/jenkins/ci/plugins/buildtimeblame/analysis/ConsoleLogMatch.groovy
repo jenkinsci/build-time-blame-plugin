@@ -4,7 +4,6 @@ package org.jenkins.ci.plugins.buildtimeblame.analysis
 import groovy.transform.AutoClone
 import groovy.transform.EqualsAndHashCode
 import groovy.transform.ToString
-import org.apache.commons.lang.time.DurationFormatUtils
 
 import java.beans.Transient
 
@@ -43,6 +42,18 @@ class ConsoleLogMatch {
     }
 
     private static String format(long elapsedMillis) {
-        return DurationFormatUtils.formatDuration(elapsedMillis, 'mm:ss.S');
+        return formatElapsed(elapsedMillis);
     }
+    /**
+     * Formats a duration as mm:ss.SSS, matching what Commons Lang's
+     * DurationFormatUtils.formatDuration(millis, 'mm:ss.S') produced -- note the milliseconds are
+     * zero-padded to three digits, and the minutes accumulate rather than rolling over at 60.
+     */
+    private static String formatElapsed(long elapsedMillis) {
+        return String.format('%02d:%02d.%03d',
+                elapsedMillis.intdiv(60000),
+                elapsedMillis.intdiv(1000) % 60,
+                elapsedMillis % 1000)
+    }
+
 }
